@@ -1,0 +1,16 @@
+{
+  "name": "sekurity-service",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix seKUrity_backend run build && npm --prefix seKUrity_bot run build && npm --prefix seKUrity_web run build",
+    "check": "npm --prefix seKUrity_backend run check && npm --prefix seKUrity_bot run check && npm --prefix seKUrity_web run check",
+    "compose:up": "docker compose up --build",
+    "compose:down": "docker compose down",
+    "nginx:reload": "docker compose exec -T nginx nginx -t && docker compose exec -T nginx nginx -s reload",
+    "weekly-test:up": "docker compose --env-file .env --env-file .env.weekly-test -p sekurity-weekly-test -f docker-compose.yml -f docker-compose.weekly-test.yml up -d --build",
+    "weekly-test:down": "docker compose --env-file .env --env-file .env.weekly-test -p sekurity-weekly-test -f docker-compose.yml -f docker-compose.weekly-test.yml down -v",
+    "db:reset:scrums": "docker compose exec -T backend node dist/scripts/reset-scrum-data.js",
+    "db:reset:weekly-misses": "docker compose exec -T backend node dist/scripts/reset-weekly-misses.js"
+  }
+}

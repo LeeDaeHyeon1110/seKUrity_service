@@ -1,0 +1,22 @@
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local tooling and generated output
+.codex/
+.DS_Store
+*.log
+*.tsbuildinfo
+**/node_modules/
+**/dist/
+**/.next/
+**/.vinext/
+**/.wrangler/
+**/coverage/
+**/.git.standalone-backup/
+
+# Runtime data
+seKUrity_bot/data/
+postgres-data/

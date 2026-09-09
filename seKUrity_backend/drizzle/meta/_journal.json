@@ -1,0 +1,97 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1785207736701,
+      "tag": "0000_handy_callisto",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785366104951,
+      "tag": "0001_uneven_bruce_banner",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785371310316,
+      "tag": "0002_youthful_boomer",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785376541062,
+      "tag": "0003_icy_flatman",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785378587223,
+      "tag": "0004_last_peter_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785383250871,
+      "tag": "0005_flawless_steel_serpent",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785438779249,
+      "tag": "0006_scrum_sunday_schedule",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785442626314,
+      "tag": "0007_weekly_reports_and_scrum_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785443008640,
+      "tag": "0008_weekly_attachment_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785466031955,
+      "tag": "0009_parched_komodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787636492626,
+      "tag": "0010_wealthy_supernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788795050555,
+      "tag": "0011_sparkling_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788831447217,
+      "tag": "0012_abandoned_lifeguard",
+      "breakpoints": true
+    }
+  ]
+}

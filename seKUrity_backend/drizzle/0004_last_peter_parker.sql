@@ -1,0 +1,1 @@
+ALTER TABLE "scrums" ADD COLUMN "completion_results" jsonb;

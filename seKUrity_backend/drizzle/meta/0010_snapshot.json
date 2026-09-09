@@ -1,0 +1,2090 @@
+{
+  "id": "ef9fc06b-ee51-4f9a-a9df-db5d4c65234d",
+  "prevId": "d9812723-4fbe-4de9-9785-c7b533b93f37",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.guild_approver_roles": {
+      "name": "guild_approver_roles",
+      "schema": "",
+      "columns": {
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "guild_approver_roles_guild_id_role_id_pk": {
+          "name": "guild_approver_roles_guild_id_role_id_pk",
+          "columns": [
+            "guild_id",
+            "role_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.guild_channel_settings": {
+      "name": "guild_channel_settings",
+      "schema": "",
+      "columns": {
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "guild_channel_settings_guild_id_type_pk": {
+          "name": "guild_channel_settings_guild_id_type_pk",
+          "columns": [
+            "guild_id",
+            "type"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "guild_channel_settings_type_check": {
+          "name": "guild_channel_settings_type_check",
+          "value": "\"guild_channel_settings\".\"type\" IN ('logs', 'scrums', 'approve', 'weekly')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.guild_weekly_settings": {
+      "name": "guild_weekly_settings",
+      "schema": "",
+      "columns": {
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scrum_current_todos": {
+      "name": "scrum_current_todos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scrum_id": {
+          "name": "scrum_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scrum_current_todos_position_unique": {
+          "name": "scrum_current_todos_position_unique",
+          "columns": [
+            {
+              "expression": "scrum_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_current_todos_scrum_id_scrums_id_fk": {
+          "name": "scrum_current_todos_scrum_id_scrums_id_fk",
+          "tableFrom": "scrum_current_todos",
+          "tableTo": "scrums",
+          "columnsFrom": [
+            "scrum_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrum_current_todos_position_check": {
+          "name": "scrum_current_todos_position_check",
+          "value": "\"scrum_current_todos\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.scrum_entries": {
+      "name": "scrum_entries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scrum_id": {
+          "name": "scrum_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scrum_date": {
+          "name": "scrum_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "next_scrum_date": {
+          "name": "next_scrum_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "discord_message_ids": {
+          "name": "discord_message_ids",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scrum_entries_scrum_date_unique": {
+          "name": "scrum_entries_scrum_date_unique",
+          "columns": [
+            {
+              "expression": "scrum_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scrum_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scrum_entries_scrum_created_idx": {
+          "name": "scrum_entries_scrum_created_idx",
+          "columns": [
+            {
+              "expression": "scrum_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_entries_scrum_id_scrums_id_fk": {
+          "name": "scrum_entries_scrum_id_scrums_id_fk",
+          "tableFrom": "scrum_entries",
+          "tableTo": "scrums",
+          "columnsFrom": [
+            "scrum_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scrum_entry_attachments": {
+      "name": "scrum_entry_attachments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scrum_entry_attachments_position_unique": {
+          "name": "scrum_entry_attachments_position_unique",
+          "columns": [
+            {
+              "expression": "item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_entry_attachments_item_id_scrum_entry_items_id_fk": {
+          "name": "scrum_entry_attachments_item_id_scrum_entry_items_id_fk",
+          "tableFrom": "scrum_entry_attachments",
+          "tableTo": "scrum_entry_items",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrum_entry_attachments_size_check": {
+          "name": "scrum_entry_attachments_size_check",
+          "value": "\"scrum_entry_attachments\".\"size\" >= 0"
+        },
+        "scrum_entry_attachments_position_check": {
+          "name": "scrum_entry_attachments_position_check",
+          "value": "\"scrum_entry_attachments\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.scrum_entry_items": {
+      "name": "scrum_entry_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "entry_id": {
+          "name": "entry_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "comment": {
+          "name": "comment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scrum_entry_items_position_unique": {
+          "name": "scrum_entry_items_position_unique",
+          "columns": [
+            {
+              "expression": "entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scrum_entry_items_entry_kind_idx": {
+          "name": "scrum_entry_items_entry_kind_idx",
+          "columns": [
+            {
+              "expression": "entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_entry_items_entry_id_scrum_entries_id_fk": {
+          "name": "scrum_entry_items_entry_id_scrum_entries_id_fk",
+          "tableFrom": "scrum_entry_items",
+          "tableTo": "scrum_entries",
+          "columnsFrom": [
+            "entry_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrum_entry_items_kind_check": {
+          "name": "scrum_entry_items_kind_check",
+          "value": "\"scrum_entry_items\".\"kind\" IN ('completed', 'extra')"
+        },
+        "scrum_entry_items_position_check": {
+          "name": "scrum_entry_items_position_check",
+          "value": "\"scrum_entry_items\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.scrum_entry_links": {
+      "name": "scrum_entry_links",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scrum_entry_links_position_unique": {
+          "name": "scrum_entry_links_position_unique",
+          "columns": [
+            {
+              "expression": "item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_entry_links_item_id_scrum_entry_items_id_fk": {
+          "name": "scrum_entry_links_item_id_scrum_entry_items_id_fk",
+          "tableFrom": "scrum_entry_links",
+          "tableTo": "scrum_entry_items",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrum_entry_links_position_check": {
+          "name": "scrum_entry_links_position_check",
+          "value": "\"scrum_entry_links\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.scrum_entry_next_todos": {
+      "name": "scrum_entry_next_todos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "entry_id": {
+          "name": "entry_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scrum_entry_next_todos_position_unique": {
+          "name": "scrum_entry_next_todos_position_unique",
+          "columns": [
+            {
+              "expression": "entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_entry_next_todos_entry_id_scrum_entries_id_fk": {
+          "name": "scrum_entry_next_todos_entry_id_scrum_entries_id_fk",
+          "tableFrom": "scrum_entry_next_todos",
+          "tableTo": "scrum_entries",
+          "columnsFrom": [
+            "entry_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrum_entry_next_todos_position_check": {
+          "name": "scrum_entry_next_todos_position_check",
+          "value": "\"scrum_entry_next_todos\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.scrum_members": {
+      "name": "scrum_members",
+      "schema": "",
+      "columns": {
+        "scrum_id": {
+          "name": "scrum_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scrum_members_user_idx": {
+          "name": "scrum_members_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scrum_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_members_scrum_id_scrums_id_fk": {
+          "name": "scrum_members_scrum_id_scrums_id_fk",
+          "tableFrom": "scrum_members",
+          "tableTo": "scrums",
+          "columnsFrom": [
+            "scrum_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "scrum_members_scrum_id_user_id_pk": {
+          "name": "scrum_members_scrum_id_user_id_pk",
+          "columns": [
+            "scrum_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scrum_request_todos": {
+      "name": "scrum_request_todos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "scrum_request_todos_position_unique": {
+          "name": "scrum_request_todos_position_unique",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_request_todos_request_id_scrum_requests_id_fk": {
+          "name": "scrum_request_todos_request_id_scrum_requests_id_fk",
+          "tableFrom": "scrum_request_todos",
+          "tableTo": "scrum_requests",
+          "columnsFrom": [
+            "request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrum_request_todos_position_check": {
+          "name": "scrum_request_todos_position_check",
+          "value": "\"scrum_request_todos\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.scrum_requests": {
+      "name": "scrum_requests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approval_channel_id": {
+          "name": "approval_channel_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approval_thread_id": {
+          "name": "approval_thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creator_id": {
+          "name": "creator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_name": {
+          "name": "project_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "overview": {
+          "name": "overview",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "planning_document_id": {
+          "name": "planning_document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_name": {
+          "name": "planning_document_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_url": {
+          "name": "planning_document_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_content_type": {
+          "name": "planning_document_content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_size": {
+          "name": "planning_document_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_id": {
+          "name": "project_score_document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_name": {
+          "name": "project_score_document_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_url": {
+          "name": "project_score_document_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_content_type": {
+          "name": "project_score_document_content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_size": {
+          "name": "project_score_document_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "scrum_id": {
+          "name": "scrum_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reviewed_by": {
+          "name": "reviewed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scrum_requests_approval_thread_unique": {
+          "name": "scrum_requests_approval_thread_unique",
+          "columns": [
+            {
+              "expression": "approval_thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scrum_requests_guild_status_idx": {
+          "name": "scrum_requests_guild_status_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scrum_requests_scrum_id_scrums_id_fk": {
+          "name": "scrum_requests_scrum_id_scrums_id_fk",
+          "tableFrom": "scrum_requests",
+          "tableTo": "scrums",
+          "columnsFrom": [
+            "scrum_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrum_requests_category_check": {
+          "name": "scrum_requests_category_check",
+          "value": "\"scrum_requests\".\"category\" IN ('project', 'study', 'personal')"
+        },
+        "scrum_requests_planning_document_size_check": {
+          "name": "scrum_requests_planning_document_size_check",
+          "value": "\"scrum_requests\".\"planning_document_size\" IS NULL OR \"scrum_requests\".\"planning_document_size\" >= 0"
+        },
+        "scrum_requests_project_score_document_size_check": {
+          "name": "scrum_requests_project_score_document_size_check",
+          "value": "\"scrum_requests\".\"project_score_document_size\" IS NULL OR \"scrum_requests\".\"project_score_document_size\" >= 0"
+        },
+        "scrum_requests_status_check": {
+          "name": "scrum_requests_status_check",
+          "value": "\"scrum_requests\".\"status\" IN ('pending', 'approved', 'rejected')"
+        },
+        "scrum_requests_review_state_check": {
+          "name": "scrum_requests_review_state_check",
+          "value": "\n        (\n          \"scrum_requests\".\"status\" = 'pending'\n          AND \"scrum_requests\".\"scrum_id\" IS NULL\n          AND \"scrum_requests\".\"reviewed_by\" IS NULL\n          AND \"scrum_requests\".\"rejection_reason\" IS NULL\n          AND \"scrum_requests\".\"reviewed_at\" IS NULL\n        )\n        OR (\n          \"scrum_requests\".\"status\" = 'approved'\n          AND \"scrum_requests\".\"scrum_id\" IS NOT NULL\n          AND \"scrum_requests\".\"reviewed_by\" IS NOT NULL\n          AND \"scrum_requests\".\"rejection_reason\" IS NULL\n          AND \"scrum_requests\".\"reviewed_at\" IS NOT NULL\n        )\n        OR (\n          \"scrum_requests\".\"status\" = 'rejected'\n          AND \"scrum_requests\".\"scrum_id\" IS NULL\n          AND \"scrum_requests\".\"reviewed_by\" IS NOT NULL\n          AND \"scrum_requests\".\"rejection_reason\" IS NOT NULL\n          AND \"scrum_requests\".\"reviewed_at\" IS NOT NULL\n        )\n      "
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.scrums": {
+      "name": "scrums",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scrum_channel_id": {
+          "name": "scrum_channel_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creator_id": {
+          "name": "creator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_name": {
+          "name": "project_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "overview": {
+          "name": "overview",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'project'"
+        },
+        "planning_document_id": {
+          "name": "planning_document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_name": {
+          "name": "planning_document_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_url": {
+          "name": "planning_document_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_content_type": {
+          "name": "planning_document_content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planning_document_size": {
+          "name": "planning_document_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_id": {
+          "name": "project_score_document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_name": {
+          "name": "project_score_document_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_url": {
+          "name": "project_score_document_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_content_type": {
+          "name": "project_score_document_content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_score_document_size": {
+          "name": "project_score_document_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "next_scrum_date": {
+          "name": "next_scrum_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_by": {
+          "name": "completed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completion_summary": {
+          "name": "completion_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completion_results": {
+          "name": "completion_results",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abandoned_by": {
+          "name": "abandoned_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abandonment_reason": {
+          "name": "abandonment_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abandoned_at": {
+          "name": "abandoned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scrums_thread_id_unique": {
+          "name": "scrums_thread_id_unique",
+          "columns": [
+            {
+              "expression": "thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scrums_guild_status_idx": {
+          "name": "scrums_guild_status_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scrums_next_date_active_idx": {
+          "name": "scrums_next_date_active_idx",
+          "columns": [
+            {
+              "expression": "next_scrum_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"scrums\".\"status\" = 'active'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scrums_status_check": {
+          "name": "scrums_status_check",
+          "value": "\"scrums\".\"status\" IN ('active', 'closed', 'abandoned')"
+        },
+        "scrums_category_check": {
+          "name": "scrums_category_check",
+          "value": "\"scrums\".\"category\" IN ('project', 'study', 'personal')"
+        },
+        "scrums_planning_document_size_check": {
+          "name": "scrums_planning_document_size_check",
+          "value": "\"scrums\".\"planning_document_size\" IS NULL OR \"scrums\".\"planning_document_size\" >= 0"
+        },
+        "scrums_project_score_document_size_check": {
+          "name": "scrums_project_score_document_size_check",
+          "value": "\"scrums\".\"project_score_document_size\" IS NULL OR \"scrums\".\"project_score_document_size\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.weekly_report_attachments": {
+      "name": "weekly_report_attachments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "weekly_report_attachments_position_unique": {
+          "name": "weekly_report_attachments_position_unique",
+          "columns": [
+            {
+              "expression": "item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "weekly_report_attachments_item_id_weekly_report_items_id_fk": {
+          "name": "weekly_report_attachments_item_id_weekly_report_items_id_fk",
+          "tableFrom": "weekly_report_attachments",
+          "tableTo": "weekly_report_items",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "weekly_report_attachments_size_check": {
+          "name": "weekly_report_attachments_size_check",
+          "value": "\"weekly_report_attachments\".\"size\" >= 0"
+        },
+        "weekly_report_attachments_position_check": {
+          "name": "weekly_report_attachments_position_check",
+          "value": "\"weekly_report_attachments\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.weekly_report_deletions": {
+      "name": "weekly_report_deletions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "report_id": {
+          "name": "report_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_end": {
+          "name": "week_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deleted_by": {
+          "name": "deleted_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "weekly_report_deletions_guild_week_idx": {
+          "name": "weekly_report_deletions_guild_week_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "week_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.weekly_report_items": {
+      "name": "weekly_report_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "report_id": {
+          "name": "report_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "comment": {
+          "name": "comment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "weekly_report_items_position_unique": {
+          "name": "weekly_report_items_position_unique",
+          "columns": [
+            {
+              "expression": "report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "weekly_report_items_report_kind_idx": {
+          "name": "weekly_report_items_report_kind_idx",
+          "columns": [
+            {
+              "expression": "report_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "weekly_report_items_report_id_weekly_reports_id_fk": {
+          "name": "weekly_report_items_report_id_weekly_reports_id_fk",
+          "tableFrom": "weekly_report_items",
+          "tableTo": "weekly_reports",
+          "columnsFrom": [
+            "report_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "weekly_report_items_kind_check": {
+          "name": "weekly_report_items_kind_check",
+          "value": "\"weekly_report_items\".\"kind\" IN ('completed', 'extra', 'next', 'pending')"
+        },
+        "weekly_report_items_position_check": {
+          "name": "weekly_report_items_position_check",
+          "value": "\"weekly_report_items\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.weekly_report_links": {
+      "name": "weekly_report_links",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "weekly_report_links_position_unique": {
+          "name": "weekly_report_links_position_unique",
+          "columns": [
+            {
+              "expression": "item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "position",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "weekly_report_links_item_id_weekly_report_items_id_fk": {
+          "name": "weekly_report_links_item_id_weekly_report_items_id_fk",
+          "tableFrom": "weekly_report_links",
+          "tableTo": "weekly_report_items",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "weekly_report_links_position_check": {
+          "name": "weekly_report_links_position_check",
+          "value": "\"weekly_report_links\".\"position\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.weekly_report_misses": {
+      "name": "weekly_report_misses",
+      "schema": "",
+      "columns": {
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_end": {
+          "name": "week_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "weekly_report_misses_guild_week_idx": {
+          "name": "weekly_report_misses_guild_week_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "week_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "weekly_report_misses_guild_id_user_id_week_end_pk": {
+          "name": "weekly_report_misses_guild_id_user_id_week_end_pk",
+          "columns": [
+            "guild_id",
+            "user_id",
+            "week_end"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.weekly_report_reminders": {
+      "name": "weekly_report_reminders",
+      "schema": "",
+      "columns": {
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_end": {
+          "name": "week_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "weekly_report_reminders_guild_week_idx": {
+          "name": "weekly_report_reminders_guild_week_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "week_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "weekly_report_reminders_guild_id_user_id_week_end_pk": {
+          "name": "weekly_report_reminders_guild_id_user_id_week_end_pk",
+          "columns": [
+            "guild_id",
+            "user_id",
+            "week_end"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.weekly_report_threads": {
+      "name": "weekly_report_threads",
+      "schema": "",
+      "columns": {
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "missed_report_count": {
+          "name": "missed_report_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "weekly_report_threads_thread_unique": {
+          "name": "weekly_report_threads_thread_unique",
+          "columns": [
+            {
+              "expression": "thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "weekly_report_threads_guild_channel_idx": {
+          "name": "weekly_report_threads_guild_channel_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "weekly_report_threads_guild_id_user_id_pk": {
+          "name": "weekly_report_threads_guild_id_user_id_pk",
+          "columns": [
+            "guild_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.weekly_reports": {
+      "name": "weekly_reports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_start": {
+          "name": "week_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_end": {
+          "name": "week_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "discord_message_ids": {
+          "name": "discord_message_ids",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "weekly_reports_user_week_unique": {
+          "name": "weekly_reports_user_week_unique",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "week_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "weekly_reports_thread_created_idx": {
+          "name": "weekly_reports_thread_created_idx",
+          "columns": [
+            {
+              "expression": "thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

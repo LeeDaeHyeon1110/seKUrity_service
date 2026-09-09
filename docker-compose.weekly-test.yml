@@ -1,0 +1,36 @@
+services:
+  web:
+    profiles:
+      - web
+
+  nginx:
+    profiles:
+      - web
+
+  backend:
+    environment:
+      NODE_ENV: test
+      WEEKLY_TEST_DATE: ${WEEKLY_TEST_DATE:?WEEKLY_TEST_DATE is required}
+
+  bot:
+    environment:
+      NODE_ENV: test
+      DISCORD_TOKEN: ${WEEKLY_TEST_DISCORD_TOKEN:?WEEKLY_TEST_DISCORD_TOKEN is required}
+      WEEKLY_TEST_DATE: ${WEEKLY_TEST_DATE:?WEEKLY_TEST_DATE is required}
+    depends_on:
+      deploy-commands:
+        condition: service_completed_successfully
+
+  deploy-commands:
+    build:
+      context: ./seKUrity_bot
+    restart: "no"
+    command:
+      - node
+      - dist/scripts/deploy-commands.js
+    environment:
+      DISCORD_TOKEN: ${WEEKLY_TEST_DISCORD_TOKEN:?WEEKLY_TEST_DISCORD_TOKEN is required}
+      DISCORD_CLIENT_ID: ${WEEKLY_TEST_DISCORD_CLIENT_ID:?WEEKLY_TEST_DISCORD_CLIENT_ID is required}
+      DISCORD_GUILD_ID: ${WEEKLY_TEST_DISCORD_GUILD_ID:?WEEKLY_TEST_DISCORD_GUILD_ID is required}
+    networks:
+      - app

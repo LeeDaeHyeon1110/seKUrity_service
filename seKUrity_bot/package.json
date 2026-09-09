@@ -1,0 +1,32 @@
+{
+  "name": "sekurity-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Discord moderation and security helper bot.",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --pretty",
+    "start": "node dist/src/index.js",
+    "deploy:commands": "npm run deploy:commands:guild",
+    "deploy:commands:guild": "tsx scripts/deploy-commands.ts",
+    "deploy:commands:global": "tsx scripts/deploy-global-commands.ts",
+    "delete:commands:guild": "tsx scripts/delete-guild-commands.ts",
+    "test:newscrum": "tsx scripts/create-test-scrum.ts",
+    "check": "tsc --noEmit",
+    "check:components": "node --import tsx scripts/validate-scrum-components.ts"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
+    "node-cron": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

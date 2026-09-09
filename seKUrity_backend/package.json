@@ -1,0 +1,37 @@
+{
+  "name": "sekurity-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fastify API for seKUrity services.",
+  "main": "dist/src/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --pretty",
+    "start": "node dist/src/server.js",
+    "check": "tsc --noEmit",
+    "check:api": "node --import tsx scripts/validate-api.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/runMigrations.ts",
+    "db:reset:weekly-misses": "node dist/scripts/reset-weekly-misses.js",
+    "db:reset:weekly-misses:dev": "node --import tsx scripts/reset-weekly-misses.ts",
+    "db:reset:scrums": "node --import tsx scripts/reset-scrum-data.ts"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "@fastify/swagger": "^9.8.1",
+    "@sinclair/typebox": "^0.34.41",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.10.0",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.5",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

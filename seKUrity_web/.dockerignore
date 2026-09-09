@@ -1,0 +1,10 @@
+.git
+.git.standalone-backup
+.next
+.wrangler
+dist
+node_modules
+.env*
+npm-debug.log*
+*.tsbuildinfo
+.DS_Store
