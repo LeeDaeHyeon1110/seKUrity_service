@@ -4,6 +4,8 @@ import type { Scrum, ScrumEntry, ScrumRequest } from './types';
 import { formatScrumDate } from './dateUtils';
 import { formatList, truncateText } from './text';
 
+export const SCRUM_START_EMBED_TITLE = '스크럼 - 시작';
+
 function formatOwners(ownerIds: string[]): string {
   return ownerIds.map((ownerId) => `<@${ownerId}>`).join(', ');
 }
@@ -89,7 +91,7 @@ export function buildScrumTodoEmbed(
 ): EmbedBuilder {
   return new EmbedBuilder()
     .setColor(0x57f287)
-    .setTitle('스크럼 - 시작')
+    .setTitle(SCRUM_START_EMBED_TITLE)
     .setDescription(`**다음 스크럼 날짜**: ${formatScrumDate(scrum.nextScrumDate)}`)
     .addFields(
       {

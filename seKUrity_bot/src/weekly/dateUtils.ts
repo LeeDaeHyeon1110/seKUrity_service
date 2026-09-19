@@ -1,4 +1,4 @@
-import { getNextSundayKstDateString } from '../scrums/dateUtils';
+import { getCurrentWeeklyCycleEndKstDateString } from '../scrums/dateUtils';
 
 export interface WeeklyPeriod {
   weekStart: string;
@@ -21,7 +21,7 @@ function parseDate(value: string): Date {
 export function getCurrentWeeklyPeriodKst(
   date?: Date,
 ): WeeklyPeriod {
-  const weekEnd = getNextSundayKstDateString(date);
+  const weekEnd = getCurrentWeeklyCycleEndKstDateString(date);
   const end = parseDate(weekEnd);
 
   const start = new Date(end);
@@ -31,6 +31,14 @@ export function getCurrentWeeklyPeriodKst(
     weekStart: start.toISOString().slice(0, 10),
     weekEnd,
   };
+}
+
+export function getWeeklyReportDeadlineDate(
+  weekEnd: string,
+): string {
+  const deadline = parseDate(weekEnd);
+  deadline.setUTCDate(deadline.getUTCDate() + 2);
+  return deadline.toISOString().slice(0, 10);
 }
 
 export function isWeeklyReportOpen(

@@ -9,7 +9,10 @@ import {
 } from 'discord.js';
 import { ChannelSettingType } from '../src/constants/channelTypes';
 import { ScrumCategory } from '../src/scrums/categories';
-import { buildScrumCompletionRow } from '../src/scrums/components';
+import {
+  buildScrumCompletionRow,
+  buildScrumStartRow,
+} from '../src/scrums/components';
 import { getKstDateString } from '../src/scrums/dateUtils';
 import {
   buildScrumIntroEmbed,
@@ -134,7 +137,10 @@ async function main(): Promise<void> {
       },
       reason: `Test scrum created for ${testMember.user.tag}`,
     });
-    await post.send({ embeds: [todoEmbed] });
+    await post.send({
+      embeds: [todoEmbed],
+      components: [buildScrumStartRow()],
+    });
 
     try {
       await post.members.add(testUserId);

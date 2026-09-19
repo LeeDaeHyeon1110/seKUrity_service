@@ -1,6 +1,8 @@
 export const ScrumCustomId = Object.freeze({
   OpenNewScrum: 'scrum:open-new',
   WriteScrum: 'scrum:write',
+  EditInitialTodos: 'scrum:edit-initial-todos',
+  InitialTodosModal: 'scrum:initial-todos-modal',
   NewScrumDetails: 'scrum:new-details',
   NewScrumPlanningContinue: 'scrum:new-planning-continue',
   NewScrumPlanning: 'scrum:new-planning',

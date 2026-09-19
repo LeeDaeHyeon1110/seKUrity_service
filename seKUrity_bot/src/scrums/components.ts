@@ -50,6 +50,7 @@ export const ScrumInputId = Object.freeze({
   EntryComment: 'entry_comment',
   EntryExtraTitle: 'entry_extra_title',
   EntryNextTodos: 'entry_next_todos',
+  InitialTodos: 'initial_todos',
   AdminProjectName: 'admin_project_name',
   AdminOverview: 'admin_overview',
   AdminIncompleteReason: 'admin_incomplete_reason',
@@ -251,6 +252,19 @@ export function buildScrumWriteRow(
   }
 
   return row;
+}
+
+export function buildScrumStartRow(): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(ScrumCustomId.WriteScrum)
+      .setLabel('다음 스크럼 작성하기')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(ScrumCustomId.EditInitialTodos)
+      .setLabel('첫 진행할 작업 수정')
+      .setStyle(ButtonStyle.Secondary),
+  );
 }
 
 export function buildNewScrumPlanningContinueRow(
@@ -763,6 +777,34 @@ export function buildEntryNextTodosModal(
           value: currentTodos.length <= 4000 ? currentTodos : undefined,
           placeholder: currentTodos.length <= 4000
             ? '한 줄에 하나씩 입력해 주세요.'
+            : '기존 작업이 길어 전체 작업을 다시 입력해 주세요.',
+        },
+      )),
+    );
+}
+
+export function buildInitialTodosEditModal(
+  scrum: Pick<Scrum, 'id' | 'currentTodos' | 'nextScrumDate'>,
+): ModalBuilder {
+  const currentTodos = scrum.currentTodos.join('\n');
+
+  return new ModalBuilder()
+    .setCustomId(withSession(ScrumCustomId.InitialTodosModal, scrum.id))
+    .setTitle('첫 진행할 작업 수정')
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `첫 스크럼 날짜: **${formatScrumDate(scrum.nextScrumDate)}**`,
+      ),
+    )
+    .addLabelComponents(
+      label('첫 스크럼까지 진행할 작업', textInput(
+        ScrumInputId.InitialTodos,
+        TextInputStyle.Paragraph,
+        {
+          maxLength: 4000,
+          value: currentTodos.length <= 4000 ? currentTodos : undefined,
+          placeholder: currentTodos.length <= 4000
+            ? '한 줄에 하나씩 입력해 주세요. 최대 20개.'
             : '기존 작업이 길어 전체 작업을 다시 입력해 주세요.',
         },
       )),

@@ -226,6 +226,17 @@ export const UpdateScrumMetadataBodySchema = Type.Object({
   overview: Type.String({ minLength: 1, maxLength: 1_000 }),
 });
 
+export const UpdateScrumInitialTodosBodySchema = Type.Object({
+  updatedBy: DiscordIdSchema,
+  currentTodos: Type.Array(
+    Type.String({ minLength: 1, maxLength: 1_500 }),
+    {
+      minItems: 1,
+      maxItems: MAX_SCRUM_TODOS,
+    },
+  ),
+});
+
 export const RejectScrumRequestBodySchema = Type.Object({
   reviewerId: DiscordIdSchema,
   reason: Type.String({ minLength: 1, maxLength: 1_000 }),
@@ -398,6 +409,9 @@ export type UpdateScrumCompletionResultsBody = Static<
 >;
 export type UpdateScrumMetadataBody = Static<
   typeof UpdateScrumMetadataBodySchema
+>;
+export type UpdateScrumInitialTodosBody = Static<
+  typeof UpdateScrumInitialTodosBodySchema
 >;
 export type RejectScrumRequestBody = Static<typeof RejectScrumRequestBodySchema>;
 export type SaveScrumEntryBody = Static<typeof SaveScrumEntryBodySchema>;

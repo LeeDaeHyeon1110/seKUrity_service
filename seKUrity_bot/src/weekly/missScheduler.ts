@@ -1,8 +1,8 @@
 import type { Client, Guild } from 'discord.js';
 import { getConfiguredWeeklyTestDate } from '../config/weeklyTestDate';
 import { ChannelSettingType } from '../constants/channelTypes';
-import { getKstDateString } from '../scrums/dateUtils';
 import { getChannel } from '../storage/guildSettingsStore';
+import { getCurrentWeeklyPeriodKst } from './dateUtils';
 import {
   getWeeklyRoleId,
   listWeeklyThreads,
@@ -14,13 +14,9 @@ const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const processedThroughByGuild = new Map<string, string>();
 
 export function getLatestClosedSundayKst(date = new Date()): string {
-  const today = getKstDateString(date);
-  const parsed = new Date(`${today}T00:00:00.000Z`);
-  const daysSinceClosedSunday = parsed.getUTCDay() === 0
-    ? 7
-    : parsed.getUTCDay();
-
-  parsed.setUTCDate(parsed.getUTCDate() - daysSinceClosedSunday);
+  const activeWeekEnd = getCurrentWeeklyPeriodKst(date).weekEnd;
+  const parsed = new Date(`${activeWeekEnd}T00:00:00.000Z`);
+  parsed.setUTCDate(parsed.getUTCDate() - 7);
   return parsed.toISOString().slice(0, 10);
 }
 

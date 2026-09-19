@@ -50,6 +50,7 @@ import {
   buildEntryDetailRows,
   buildExtraDecisionRow,
   buildExtraDetailModal,
+  buildInitialTodosEditModal,
   buildNewScrumContinueRow,
   buildNewScrumDetailsModal,
   buildNewScrumPlanningContinueRow,
@@ -59,6 +60,7 @@ import {
   buildRejectRequestModal,
   buildScrumCompletionRow,
   buildScrumEntryRows,
+  buildScrumStartRow,
   buildScrumWriteRow,
   buildTodoPreview,
   buildTodoStepPreview,
@@ -69,7 +71,7 @@ import type { ScrumEntryDetailLink } from './components';
 import { ScrumCustomId, parseSessionCustomId } from './customIds';
 import {
   formatScrumDate,
-  getNextSundayKstDateString,
+  getCurrentWeeklyCycleEndKstDateString,
   getNextWeeklyScrumDateString,
 } from './dateUtils';
 import {
@@ -127,8 +129,10 @@ import {
   updateScrumEntry,
   updateScrumCompletionResults,
   updateScrumEntryResults,
+  updateScrumInitialTodos,
   updateScrumMetadata,
 } from './scrumStore';
+import { setScrumStartEditingEnabled } from './startMessageSync';
 import {
   formatApprovalThreadName,
   formatScrumThreadName,
@@ -626,7 +630,7 @@ async function rejectOutsideScheduledDate(
   interaction: ButtonInteraction | ModalSubmitInteraction,
   session: ScrumSession,
 ): Promise<boolean> {
-  const currentScrumDate = getNextSundayKstDateString();
+  const currentScrumDate = getCurrentWeeklyCycleEndKstDateString();
 
   if (currentScrumDate === session.scrumDate) {
     return false;
@@ -782,7 +786,7 @@ export async function startScrumSessionFromInteraction(
   interaction: ModalLaunchInteraction,
   scrum: Scrum,
 ): Promise<void> {
-  const scrumDate = getNextSundayKstDateString();
+  const scrumDate = getCurrentWeeklyCycleEndKstDateString();
 
   if (await hasScrumEntryForDate(scrum.id, scrumDate)) {
     await interaction.reply({
@@ -998,7 +1002,7 @@ async function handleNewScrumContinueButton(interaction: ButtonInteraction): Pro
 
   await interaction.showModal(buildNewScrumTodosModal(
     draft.id,
-    getNextSundayKstDateString(),
+    getCurrentWeeklyCycleEndKstDateString(),
   ));
 }
 
@@ -1543,7 +1547,7 @@ async function handleApproveRequestButton(
     return;
   }
 
-  const nextScrumDate = getNextSundayKstDateString();
+  const nextScrumDate = getCurrentWeeklyCycleEndKstDateString();
   const intro = {
     projectName: request.projectName,
     ownerIds: [request.creatorId],
@@ -1610,7 +1614,7 @@ async function handleApproveRequestButton(
     });
     await post.send({
       embeds: [todoEmbed],
-      components: [buildScrumWriteRow()],
+      components: [buildScrumStartRow()],
     });
   } catch (error) {
     console.error(
@@ -2118,7 +2122,7 @@ export async function startScrumEntryEditFromInteraction(
     const { entry, scrum } = entryId
       ? await getScrumEntry(entryId)
       : latest;
-    const currentScrumDate = getNextSundayKstDateString();
+    const currentScrumDate = getCurrentWeeklyCycleEndKstDateString();
 
     if (entry.authorId !== interaction.user.id) {
       await editReplyWithoutComponents(
@@ -3781,6 +3785,153 @@ async function handleOpenNewScrumButton(
   await startNewScrumFromInteraction(interaction);
 }
 
+async function handleEditInitialTodosButton(
+  interaction: ButtonInteraction,
+): Promise<void> {
+  if (!interaction.guildId || !interaction.channel?.isThread()) {
+    await interaction.reply({
+      content: '서버의 스크럼 게시물 안에서만 수정할 수 있습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const scrum = await getActiveScrumByThread(interaction.channel.id);
+
+  if (!scrum || scrum.guildId !== interaction.guildId) {
+    await interaction.reply({
+      content: '이미 완료되었거나 이 게시물에 연결된 활성 스크럼이 없습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!scrum.ownerIds.includes(interaction.user.id)) {
+    await interaction.reply({
+      content: '스크럼 참여자만 첫 진행할 작업을 수정할 수 있습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  try {
+    await getLatestScrumEntryByThread(interaction.channel.id);
+    await interaction.reply({
+      content: '첫 스크럼 기록이 작성된 뒤에는 시작 작업 목록을 수정할 수 없습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  } catch (error) {
+    if (!(error instanceof BackendApiError && error.status === 404)) {
+      throw error;
+    }
+  }
+
+  await interaction.showModal(buildInitialTodosEditModal(scrum));
+}
+
+async function handleInitialTodosModal(
+  interaction: ModalSubmitInteraction,
+  scrumId: string,
+): Promise<void> {
+  if (!interaction.guildId || !interaction.channel?.isThread()) {
+    await interaction.reply({
+      content: '서버의 스크럼 게시물 안에서만 수정할 수 있습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const scrum = await getActiveScrumByThread(interaction.channel.id);
+
+  if (
+    !scrum
+    || scrum.id !== scrumId
+    || scrum.guildId !== interaction.guildId
+  ) {
+    await interaction.reply({
+      content: '이미 완료되었거나 이 게시물에 연결된 활성 스크럼이 없습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!scrum.ownerIds.includes(interaction.user.id)) {
+    await interaction.reply({
+      content: '스크럼 참여자만 첫 진행할 작업을 수정할 수 있습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const parsedTodos = parseLines(
+    interaction.fields.getTextInputValue(ScrumInputId.InitialTodos),
+    MAX_TODOS + 1,
+  );
+
+  if (parsedTodos.length === 0) {
+    await interaction.reply({
+      content: '첫 스크럼까지 진행할 작업을 하나 이상 입력해 주세요.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (parsedTodos.length > MAX_TODOS) {
+    await interaction.reply({
+      content: `진행할 작업은 최대 ${MAX_TODOS}개까지 입력할 수 있습니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (parsedTodos.some((todo) => todo.length > 1_500)) {
+    await interaction.reply({
+      content: '각 진행할 작업은 1,500자 이하여야 합니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const currentTodos = [...new Set(parsedTodos)];
+  let updated: Scrum;
+
+  try {
+    updated = await updateScrumInitialTodos(
+      interaction.channel.id,
+      interaction.user.id,
+      currentTodos,
+    );
+  } catch (error) {
+    if (
+      error instanceof BackendApiError
+      && error.code === 'SCRUM_INITIAL_TODOS_LOCKED'
+    ) {
+      await interaction.reply({
+        content: '첫 스크럼 기록이 작성된 뒤에는 시작 작업 목록을 수정할 수 없습니다.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    throw error;
+  }
+
+  if (!interaction.isFromMessage()) {
+    await interaction.reply({
+      content: '첫 스크럼까지 진행할 작업을 수정했습니다.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await interaction.update({
+    embeds: [buildScrumTodoEmbed(updated)],
+    components: [buildScrumStartRow()],
+    allowedMentions: { parse: [] },
+  });
+}
+
 async function handleWriteScrumButton(
   interaction: ButtonInteraction,
 ): Promise<void> {
@@ -4142,6 +4293,15 @@ async function handleNextTodosModal(interaction: ModalSubmitInteraction, session
       threadWriteFailed = true;
       console.error(`[scrum] Failed to post entry ${entry.id} to thread ${thread.id}:`, error);
     }
+
+    try {
+      await setScrumStartEditingEnabled(thread, false);
+    } catch (error) {
+      console.warn(
+        `[scrum] Failed to disable initial todo editing in ${thread.id}:`,
+        error,
+      );
+    }
   }
 
   if (interaction.guild) {
@@ -4239,6 +4399,11 @@ async function handleScrumModal(interaction: ModalSubmitInteraction): Promise<vo
 
   if (parsed.prefix === ScrumCustomId.EntryNextTodosModal) {
     await handleEntryNextTodosModal(interaction, parsed.sessionId);
+    return;
+  }
+
+  if (parsed.prefix === ScrumCustomId.InitialTodosModal) {
+    await handleInitialTodosModal(interaction, parsed.sessionId);
     return;
   }
 
@@ -4361,6 +4526,11 @@ export async function handleScrumInteraction(interaction: Interaction): Promise<
 
     if (interaction.customId === ScrumCustomId.WriteScrum) {
       await handleWriteScrumButton(interaction);
+      return true;
+    }
+
+    if (interaction.customId === ScrumCustomId.EditInitialTodos) {
+      await handleEditInitialTodosButton(interaction);
       return true;
     }
 

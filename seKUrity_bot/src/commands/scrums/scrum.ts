@@ -5,7 +5,7 @@ import {
 import { buildScrumSelectRow } from '../../scrums/components';
 import {
   formatScrumDate,
-  getNextSundayKstDateString,
+  getCurrentWeeklyCycleEndKstDateString,
   getNextWeeklyScrumDateString,
 } from '../../scrums/dateUtils';
 import type { Command } from '../../types/discord';
@@ -44,7 +44,7 @@ const command: Command = {
       }
     }
 
-    const scrumDate = getNextSundayKstDateString();
+    const scrumDate = getCurrentWeeklyCycleEndKstDateString();
     const scrums = await getActiveScrumsForUser(
       interaction.guildId,
       interaction.user.id,

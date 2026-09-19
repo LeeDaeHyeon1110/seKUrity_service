@@ -18,6 +18,7 @@ import {
   SyncWeeklyReportBodySchema,
   UpdateScrumEntryBodySchema,
   UpdateScrumEntryResultsBodySchema,
+  UpdateScrumInitialTodosBodySchema,
   UpdateScrumMetadataBodySchema,
   UpdateWeeklyReportBodySchema,
   WeeklyReportThreadSchema,
@@ -33,7 +34,12 @@ import {
   assertWeeklyReportSubmissionDate,
   WeeklyRepository,
 } from '../src/modules/weekly/weekly.repository';
-import { getWeeklyCycleEnd } from '../src/modules/weeklyCycle';
+import {
+  getWeeklyCycleEnd,
+  getWeeklyReportCycleEnd,
+  isWeeklyReportDeadlineClosed,
+  isWeeklyReportReminderWindow,
+} from '../src/modules/weeklyCycle';
 
 if (!FormatRegistry.Has('uuid')) {
   FormatRegistry.Set(
@@ -223,6 +229,14 @@ async function main(): Promise<void> {
       projectName: 'Updated scrum title',
       overview: 'Updated scrum overview',
     }));
+    assert(Value.Check(UpdateScrumInitialTodosBodySchema, {
+      updatedBy: '111',
+      currentTodos: ['updated first task'],
+    }));
+    assert(!Value.Check(UpdateScrumInitialTodosBodySchema, {
+      updatedBy: '111',
+      currentTodos: [],
+    }));
     assert(Value.Check(UpdateScrumEntryBodySchema, {
       actorId: '111',
       actorType: 'member',
@@ -353,15 +367,47 @@ async function main(): Promise<void> {
     assert.doesNotThrow(
       () => assertWeeklyReportSubmissionDate(
         '2026-08-02',
-        '2026-07-31',
+        new Date('2026-07-31T03:00:00.000Z'),
       ),
     );
     assert.equal(getWeeklyCycleEnd('2026-08-02'), '2026-08-02');
-    assert.equal(getWeeklyCycleEnd('2026-08-03'), '2026-08-09');
+    assert.equal(getWeeklyCycleEnd('2026-08-03'), '2026-08-02');
+    assert.equal(
+      getWeeklyCycleEnd(new Date('2026-08-04T09:59:59.000Z')),
+      '2026-08-02',
+    );
+    assert.equal(
+      getWeeklyCycleEnd(new Date('2026-08-04T10:00:00.000Z')),
+      '2026-08-09',
+    );
+    assert.equal(
+      getWeeklyReportCycleEnd(new Date('2026-08-04T09:59:59.000Z')),
+      '2026-08-02',
+    );
+    assert.equal(
+      getWeeklyReportCycleEnd(new Date('2026-08-04T10:00:00.000Z')),
+      '2026-08-09',
+    );
+    assert(!isWeeklyReportDeadlineClosed(
+      '2026-08-02',
+      new Date('2026-08-04T09:59:59.000Z'),
+    ));
+    assert(isWeeklyReportDeadlineClosed(
+      '2026-08-02',
+      new Date('2026-08-04T10:00:00.000Z'),
+    ));
+    assert(isWeeklyReportReminderWindow(
+      '2026-08-02',
+      new Date('2026-08-04T03:00:00.000Z'),
+    ));
+    assert(!isWeeklyReportReminderWindow(
+      '2026-08-02',
+      new Date('2026-08-04T10:00:00.000Z'),
+    ));
     assert.throws(
       () => assertWeeklyReportSubmissionDate(
         '2026-08-02',
-        '2026-08-03',
+        new Date('2026-08-04T10:00:00.000Z'),
       ),
       (error: unknown) =>
         error instanceof ApiError
@@ -370,7 +416,7 @@ async function main(): Promise<void> {
     assert.doesNotThrow(
       () => assertWeeklyReportSubmissionDate(
         '2026-08-09',
-        '2026-08-03',
+        new Date('2026-08-04T10:00:00.000Z'),
       ),
     );
     const invalidWeeklyReport = await app.inject({
@@ -460,8 +506,18 @@ async function main(): Promise<void> {
     });
     assert.equal(openApi.statusCode, 200);
     assert(openApi.json().paths['/internal/v1/scrums']);
+    assert(
+      openApi.json().paths[
+        '/internal/v1/guilds/{guildId}/scrums/initial-todos-editable'
+      ],
+    );
     assert(openApi.json().paths['/internal/v1/scrums/by-thread/{threadId}/complete']);
     assert(openApi.json().paths['/internal/v1/scrums/by-thread/{threadId}/abandon']);
+    assert(
+      openApi.json().paths[
+        '/internal/v1/scrums/by-thread/{threadId}/initial-todos'
+      ],
+    );
     assert(
       openApi.json().paths[
         '/internal/v1/scrums/by-thread/{threadId}/completion-results'

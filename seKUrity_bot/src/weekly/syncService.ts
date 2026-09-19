@@ -169,6 +169,7 @@ export async function refreshWeeklyReportSummary(
     reportId: report.id,
     extraItems: report.extraItems,
     discordMessageIds: [...previousMessageIds, created.id],
+    actorType: 'administrator',
   });
 }
 

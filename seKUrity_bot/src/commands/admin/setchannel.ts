@@ -19,6 +19,7 @@ import {
   ForumTagConfigurationError,
 } from '../../scrums/forumTags';
 import { ensureScrumGuidePost } from '../../scrums/forumGuide';
+import { syncEditableScrumStartMessages } from '../../scrums/startMessageSync';
 import { setChannel } from '../../storage/guildSettingsStore';
 import type { Command } from '../../types/discord';
 import {
@@ -240,6 +241,24 @@ const command: Command = {
           error,
         );
         guideResult = '\n스크럼 작성 방법 게시물은 생성하지 못했습니다. 포럼 태그와 스레드 관리 권한을 확인해 주세요.';
+      }
+
+      if (interaction.guild) {
+        try {
+          const synchronized = await syncEditableScrumStartMessages(
+            interaction.guild,
+          );
+
+          if (synchronized > 0) {
+            guideResult += `\n수정 가능한 기존 시작 메시지 ${synchronized}개를 동기화했습니다.`;
+          }
+        } catch (error) {
+          console.error(
+            `[channels] Failed to sync scrum start messages in forum ${targetChannel.id}:`,
+            error,
+          );
+          guideResult += '\n설정은 저장했지만 기존 스크럼 시작 메시지는 동기화하지 못했습니다.';
+        }
       }
     }
 

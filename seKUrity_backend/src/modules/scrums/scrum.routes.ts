@@ -13,6 +13,7 @@ import {
   UpdateScrumCompletionResultsBodySchema,
   UpdateScrumEntryBodySchema,
   UpdateScrumEntryResultsBodySchema,
+  UpdateScrumInitialTodosBodySchema,
   UpdateScrumMetadataBodySchema,
 } from '../../contracts';
 import type {
@@ -25,6 +26,7 @@ import type {
   UpdateScrumCompletionResultsBody,
   UpdateScrumEntryBody,
   UpdateScrumEntryResultsBody,
+  UpdateScrumInitialTodosBody,
   UpdateScrumMetadataBody,
 } from '../../contracts';
 import type { Database } from '../../db/database';
@@ -164,6 +166,34 @@ export function createScrumRoutes(
       },
       async (request) => ({
         scrum: await repository.updateMetadataByThread(
+          request.params.threadId,
+          request.body,
+        ),
+      }),
+    );
+
+    fastify.patch<{
+      Params: ThreadParams;
+      Body: UpdateScrumInitialTodosBody;
+    }>(
+      '/scrums/by-thread/:threadId/initial-todos',
+      {
+        schema: {
+          tags: ['internal-scrums'],
+          params: Type.Object({ threadId: DiscordIdSchema }),
+          body: UpdateScrumInitialTodosBodySchema,
+          response: {
+            200: Type.Object({ scrum: ScrumSchema }),
+            400: ErrorResponseSchema,
+            401: ErrorResponseSchema,
+            403: ErrorResponseSchema,
+            404: ErrorResponseSchema,
+            409: ErrorResponseSchema,
+          },
+        },
+      },
+      async (request) => ({
+        scrum: await repository.updateInitialTodosByThread(
           request.params.threadId,
           request.body,
         ),
@@ -315,6 +345,27 @@ export function createScrumRoutes(
         scrums: await repository.getActiveForUser(
           request.params.guildId,
           request.query.userId,
+        ),
+      }),
+    );
+
+    fastify.get<{ Params: GuildParams }>(
+      '/guilds/:guildId/scrums/initial-todos-editable',
+      {
+        schema: {
+          tags: ['internal-scrums'],
+          params: Type.Object({ guildId: DiscordIdSchema }),
+          response: {
+            200: Type.Object({
+              scrums: Type.Array(ScrumSchema),
+            }),
+            401: ErrorResponseSchema,
+          },
+        },
+      },
+      async (request) => ({
+        scrums: await repository.getInitialTodosEditableForGuild(
+          request.params.guildId,
         ),
       }),
     );

@@ -2,6 +2,9 @@ import { getConfiguredWeeklyTestDate } from '../config/weeklyTestDate';
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const SUNDAY = 0;
+const MONDAY = 1;
+const TUESDAY = 2;
+const WEEKLY_CYCLE_DEADLINE_HOUR = 19;
 
 function getKstShiftedDate(date = new Date()): Date {
   return new Date(date.getTime() + KST_OFFSET_MS);
@@ -69,46 +72,49 @@ export function getKstDateString(date?: Date): string {
   );
 }
 
-export function getNextSundayKstDateString(date?: Date): string {
+function getWeeklyCycleEndFromKstClock(current: Date): string {
+  const day = current.getUTCDay();
+  const beforeTuesdayDeadline = day === MONDAY
+    || (day === TUESDAY
+      && current.getUTCHours() < WEEKLY_CYCLE_DEADLINE_HOUR);
+  const daysToSunday = day === SUNDAY
+    ? 0
+    : beforeTuesdayDeadline
+      ? -day
+      : (SUNDAY - day + 7) % 7;
+  const cycleEnd = new Date(Date.UTC(
+    current.getUTCFullYear(),
+    current.getUTCMonth(),
+    current.getUTCDate() + daysToSunday,
+  ));
+
+  return formatDateOnly(
+    cycleEnd.getUTCFullYear(),
+    cycleEnd.getUTCMonth() + 1,
+    cycleEnd.getUTCDate(),
+  );
+}
+
+export function getCurrentWeeklyCycleEndKstDateString(
+  date?: Date,
+): string {
   if (date === undefined) {
     const testDate = getConfiguredWeeklyTestDate();
 
     if (testDate) {
       const virtualDate = parseDateOnly(testDate);
-      const daysUntilSunday = (
-        SUNDAY - virtualDate.getUTCDay() + 7
-      ) % 7;
-
-      if (daysUntilSunday === 0) {
-        return testDate;
-      }
-
-      virtualDate.setUTCDate(
-        virtualDate.getUTCDate() + daysUntilSunday,
-      );
-      return formatDateOnly(
-        virtualDate.getUTCFullYear(),
-        virtualDate.getUTCMonth() + 1,
-        virtualDate.getUTCDate(),
-      );
+      virtualDate.setUTCHours(12);
+      return getWeeklyCycleEndFromKstClock(virtualDate);
     }
   }
 
-  const shifted = getKstShiftedDate(date ?? new Date());
-  const currentDay = shifted.getUTCDay();
-  const daysUntilSunday = (SUNDAY - currentDay + 7) % 7;
-
-  const nextSunday = new Date(Date.UTC(
-    shifted.getUTCFullYear(),
-    shifted.getUTCMonth(),
-    shifted.getUTCDate() + daysUntilSunday,
-  ));
-
-  return formatDateOnly(
-    nextSunday.getUTCFullYear(),
-    nextSunday.getUTCMonth() + 1,
-    nextSunday.getUTCDate(),
+  return getWeeklyCycleEndFromKstClock(
+    getKstShiftedDate(date ?? new Date()),
   );
+}
+
+export function getNextSundayKstDateString(date?: Date): string {
+  return getCurrentWeeklyCycleEndKstDateString(date);
 }
 
 export function getNextWeeklyScrumDateString(scrumDate: string): string {

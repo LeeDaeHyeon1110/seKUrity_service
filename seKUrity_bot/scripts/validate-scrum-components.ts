@@ -22,6 +22,7 @@ import {
   buildEntryNextTodosRequiredRow,
   buildExtraDecisionRow,
   buildExtraDetailModal,
+  buildInitialTodosEditModal,
   buildNewScrumContinueRow,
   buildNewScrumDetailsModal,
   buildNewScrumLaunchRow,
@@ -33,6 +34,7 @@ import {
   buildScrumCompletionRow,
   buildScrumEntryRows,
   buildScrumSelectRow,
+  buildScrumStartRow,
   buildScrumWriteRow,
   buildTodoModal,
   buildTodoPreview,
@@ -51,8 +53,8 @@ import {
 } from '../src/scrums/formatters';
 import {
   formatScrumDate,
+  getCurrentWeeklyCycleEndKstDateString,
   getKstDateString,
-  getNextSundayKstDateString,
 } from '../src/scrums/dateUtils';
 import { resolveWeeklyTestDate } from '../src/config/weeklyTestDate';
 import { ScrumCategory } from '../src/scrums/categories';
@@ -465,6 +467,7 @@ const modals = [
     ScrumCategory.PersonalStudy,
   )],
   ['new scrum todos', buildNewScrumTodosModal(sessionId, '2026-07-19')],
+  ['initial todos edit', buildInitialTodosEditModal(scrum)],
   ['todo', buildTodoModal(sessionId, 0, 1, 'first task')],
   ['extra detail', buildExtraDetailModal(sessionId, 0)],
   ['next todos', buildNextTodosModal(sessionId, '2026-07-19')],
@@ -761,6 +764,7 @@ const standaloneActionRows = [
   ['scrum completion', buildScrumCompletionRow()],
   ['completed scrum', buildScrumCompletionRow(true)],
   ['write scrum', buildScrumWriteRow()],
+  ['scrum start', buildScrumStartRow()],
   ['completion continue', buildCompletionContinueRow(sessionId)],
   ['completion first', buildCompletionContinueRow(sessionId, '작업 기록')],
   ['entry write and delete', buildScrumWriteRow(sessionId)],
@@ -1072,6 +1076,9 @@ assert.equal(newScrumButton.label, '스크럼 만들기');
 const writeScrumButton = buildScrumWriteRow().toJSON().components[0];
 assert.equal(writeScrumButton.style, ButtonStyle.Primary);
 assert.equal(writeScrumButton.label, '다음 스크럼 작성하기');
+const initialTodosEditButton = buildScrumStartRow().toJSON().components[1];
+assert('label' in initialTodosEditButton);
+assert.equal(initialTodosEditButton.label, '첫 진행할 작업 수정');
 const editScrumButton = buildScrumWriteRow(sessionId).toJSON().components[1];
 assert('label' in editScrumButton);
 assert.equal(editScrumButton.label, '스크럼 수정');
@@ -1085,7 +1092,8 @@ assert.equal(
 );
 assert(SCRUM_GUIDE_CONTENT.includes('`/newscrum`'));
 assert(SCRUM_GUIDE_CONTENT.includes('어느 날이든'));
-assert(SCRUM_GUIDE_CONTENT.includes('월요일 00:00'));
+assert(SCRUM_GUIDE_CONTENT.includes('화요일 19:00'));
+assert(!SCRUM_GUIDE_CONTENT.includes('월요일 00:00'));
 assert(SCRUM_GUIDE_CONTENT.includes('매주마다 주간보고에 올라가게 됩니다'));
 
 const summaryJson = buildScrumEntrySummaryEmbed(entry).toJSON();
@@ -1131,19 +1139,19 @@ assert.equal(
 );
 assert.equal(summaryJson.title, '스크럼 - 2026-07-19');
 assert.equal(
-  getNextSundayKstDateString(new Date('2026-08-01T03:00:00.000Z')),
+  getCurrentWeeklyCycleEndKstDateString(new Date('2026-08-01T03:00:00.000Z')),
   '2026-08-02',
 );
 assert.equal(
-  getNextSundayKstDateString(new Date('2026-08-02T03:00:00.000Z')),
+  getCurrentWeeklyCycleEndKstDateString(new Date('2026-08-02T03:00:00.000Z')),
   '2026-08-02',
 );
 assert.equal(
-  getNextSundayKstDateString(new Date('2026-08-02T14:59:59.999Z')),
+  getCurrentWeeklyCycleEndKstDateString(new Date('2026-08-04T09:59:59.999Z')),
   '2026-08-02',
 );
 assert.equal(
-  getNextSundayKstDateString(new Date('2026-08-02T15:00:00.000Z')),
+  getCurrentWeeklyCycleEndKstDateString(new Date('2026-08-04T10:00:00.000Z')),
   '2026-08-09',
 );
 assert(!summaryJson.description?.includes('프로젝트'));
@@ -1541,7 +1549,7 @@ assert(weeklyStarterContent.includes('<@4>님의 주간보고 게시물입니다
 assert(weeklyStarterContent.includes('자동적으로 동기화됩니다'));
 assert(weeklyStarterContent.includes('`/weekly` 명령어'));
 assert(weeklyStarterContent.includes('보안과 관련 없는 내용'));
-assert(weeklyStarterContent.includes('마감은 매주 일요일'));
+assert(weeklyStarterContent.includes('마감은 매주 화요일 19시'));
 assert.equal(weeklyReportJson.title, '주간보고 - 2026-07-19');
 assert.equal(weeklyReportJson.fields?.length, 1);
 assert(!weeklyReportJson.fields?.some(
@@ -1572,15 +1580,23 @@ assert.equal(
   '2026-07-26',
 );
 assert.equal(
-  getDueWeeklyReminderWeekEnd(new Date('2026-08-02T02:59:59.000Z')),
-  null,
+  getLatestClosedSundayKst(new Date('2026-08-04T09:59:59.000Z')),
+  '2026-07-26',
 );
 assert.equal(
-  getDueWeeklyReminderWeekEnd(new Date('2026-08-02T03:00:00.000Z')),
+  getLatestClosedSundayKst(new Date('2026-08-04T10:00:00.000Z')),
   '2026-08-02',
 );
 assert.equal(
-  getDueWeeklyReminderWeekEnd(new Date('2026-08-03T03:00:00.000Z')),
+  getDueWeeklyReminderWeekEnd(new Date('2026-08-04T02:59:59.000Z')),
+  null,
+);
+assert.equal(
+  getDueWeeklyReminderWeekEnd(new Date('2026-08-04T03:00:00.000Z')),
+  '2026-08-02',
+);
+assert.equal(
+  getDueWeeklyReminderWeekEnd(new Date('2026-08-04T10:00:00.000Z')),
   null,
 );
 assert.equal(
@@ -1609,6 +1625,20 @@ assert.deepEqual(
     weekEnd: '2026-08-02',
   },
 );
+assert.deepEqual(
+  getCurrentWeeklyPeriodKst(new Date('2026-08-04T09:59:59.000Z')),
+  {
+    weekStart: '2026-07-27',
+    weekEnd: '2026-08-02',
+  },
+);
+assert.deepEqual(
+  getCurrentWeeklyPeriodKst(new Date('2026-08-04T10:00:00.000Z')),
+  {
+    weekStart: '2026-08-03',
+    weekEnd: '2026-08-09',
+  },
+);
 
 const originalNodeEnv = process.env.NODE_ENV;
 const originalWeeklyTestDate = process.env.WEEKLY_TEST_DATE;
@@ -1617,7 +1647,7 @@ try {
   process.env.NODE_ENV = 'test';
   process.env.WEEKLY_TEST_DATE = '2026-08-02';
   assert.equal(getKstDateString(), '2026-08-02');
-  assert.equal(getNextSundayKstDateString(), '2026-08-02');
+  assert.equal(getCurrentWeeklyCycleEndKstDateString(), '2026-08-02');
   assert.deepEqual(getCurrentWeeklyPeriodKst(), {
     weekStart: '2026-07-27',
     weekEnd: '2026-08-02',
@@ -1626,7 +1656,16 @@ try {
 
   process.env.WEEKLY_TEST_DATE = '2026-08-03';
   assert.equal(getKstDateString(), '2026-08-03');
-  assert.equal(getNextSundayKstDateString(), '2026-08-09');
+  assert.equal(getCurrentWeeklyCycleEndKstDateString(), '2026-08-02');
+  assert.deepEqual(getCurrentWeeklyPeriodKst(), {
+    weekStart: '2026-07-27',
+    weekEnd: '2026-08-02',
+  });
+  assert(isWeeklyReportOpen('2026-08-02'));
+  assert(!isWeeklyReportOpen('2026-08-09'));
+
+  process.env.WEEKLY_TEST_DATE = '2026-08-05';
+  assert.equal(getCurrentWeeklyCycleEndKstDateString(), '2026-08-09');
   assert.deepEqual(getCurrentWeeklyPeriodKst(), {
     weekStart: '2026-08-03',
     weekEnd: '2026-08-09',

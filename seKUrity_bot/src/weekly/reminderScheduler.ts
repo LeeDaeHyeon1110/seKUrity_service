@@ -4,7 +4,10 @@ import type { Client, Guild } from 'discord.js';
 import { getConfiguredWeeklyTestDate } from '../config/weeklyTestDate';
 import { ChannelSettingType } from '../constants/channelTypes';
 import { getChannel } from '../storage/guildSettingsStore';
-import { getCurrentWeeklyPeriodKst } from './dateUtils';
+import {
+  getCurrentWeeklyPeriodKst,
+  getWeeklyReportDeadlineDate,
+} from './dateUtils';
 import { getAllGuildMembers } from './memberCache';
 import {
   getWeeklyRoleId,
@@ -13,13 +16,19 @@ import {
 } from './weeklyStore';
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1_000;
+const TUESDAY = 2;
+const DEADLINE_HOUR = 19;
 
 export function getDueWeeklyReminderWeekEnd(
   date = new Date(),
 ): string | null {
   const kst = new Date(date.getTime() + KST_OFFSET_MS);
 
-  if (kst.getUTCDay() !== 0 || kst.getUTCHours() < 12) {
+  if (
+    kst.getUTCDay() !== TUESDAY
+    || kst.getUTCHours() < 12
+    || kst.getUTCHours() >= DEADLINE_HOUR
+  ) {
     return null;
   }
 
@@ -79,7 +88,7 @@ async function processGuildReminders(
           .setTitle('주간보고 작성 리마인드')
           .setDescription([
             '이번 주 주간보고에 완료한 작업이 아직 없습니다.',
-            '오늘 자정 전까지 `/weekly` 또는 주간보고 게시물의 버튼을 통해 작성해 주세요.',
+            '오늘 19시 전까지 `/weekly` 또는 주간보고 게시물의 버튼을 통해 작성해 주세요.',
           ].join('\n'))
           .addFields(
             {
@@ -89,7 +98,7 @@ async function processGuildReminders(
             },
             {
               name: '마감일',
-              value: `${weekEnd} (일요일)`,
+              value: `${getWeeklyReportDeadlineDate(weekEnd)} (화요일) 19:00`,
               inline: true,
             },
             ...(reportUrl
@@ -140,7 +149,7 @@ export function startWeeklyReminderScheduler(client: Client): void {
   }
 
   void processDueReminders(client);
-  cron.schedule('0 12-23 * * 0', () => processDueReminders(client), {
+  cron.schedule('0 12-18 * * 2', () => processDueReminders(client), {
     timezone: 'Asia/Seoul',
     noOverlap: true,
     name: 'weekly-report-reminders',

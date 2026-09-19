@@ -136,6 +136,25 @@ export async function updateScrumMetadata(
   return response.scrum;
 }
 
+export async function updateScrumInitialTodos(
+  threadId: string,
+  updatedBy: string,
+  currentTodos: string[],
+): Promise<Scrum> {
+  const response = await backendRequest<{ scrum: Scrum }>(
+    `/internal/v1/scrums/by-thread/${encodeURIComponent(threadId)}/initial-todos`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        updatedBy,
+        currentTodos,
+      }),
+    },
+  );
+
+  return response.scrum;
+}
+
 export async function getActiveScrumsForUser(
   guildId: string,
   userId: string,
@@ -143,6 +162,20 @@ export async function getActiveScrumsForUser(
   const query = new URLSearchParams({ userId });
   const response = await backendRequest<{ scrums: Scrum[] }>(
     `/internal/v1/guilds/${encodeURIComponent(guildId)}/scrums/active?${query}`,
+  );
+
+  return response.scrums;
+}
+
+export async function getInitialTodosEditableScrums(
+  guildId: string,
+): Promise<Scrum[]> {
+  const response = await backendRequest<{ scrums: Scrum[] }>(
+    [
+      '/internal/v1/guilds',
+      encodeURIComponent(guildId),
+      'scrums/initial-todos-editable',
+    ].join('/'),
   );
 
   return response.scrums;

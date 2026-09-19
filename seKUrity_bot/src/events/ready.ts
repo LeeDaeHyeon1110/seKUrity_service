@@ -1,5 +1,7 @@
 import { Events } from 'discord.js';
 import type { Client } from 'discord.js';
+import { syncConfiguredScrumGuidePost } from '../scrums/forumGuide';
+import { syncEditableScrumStartMessages } from '../scrums/startMessageSync';
 import { reconcileDeletedConfiguredChannels } from '../storage/configuredChannelCleanup';
 import { syncWeeklyForum } from '../weekly/forumSync';
 import { startWeeklyMissScheduler } from '../weekly/missScheduler';
@@ -20,7 +22,44 @@ export default {
             `[channels] Removed stale ${removedTypes.join(', ')} settings in guild ${guild.id}.`,
           );
         }
+      } catch (error) {
+        console.error(
+          `[channels] Failed to reconcile configured channels for guild ${guild.id}:`,
+          error,
+        );
+      }
 
+      try {
+        const guide = await syncConfiguredScrumGuidePost(guild);
+
+        if (guide) {
+          console.log(
+            `[scrum] Synchronized guide post ${guide.id} in guild ${guild.id}.`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `[scrum] Failed to sync guide post for guild ${guild.id}:`,
+          error,
+        );
+      }
+
+      try {
+        const synchronized = await syncEditableScrumStartMessages(guild);
+
+        if (synchronized > 0) {
+          console.log(
+            `[scrum] Synchronized ${synchronized} editable start message(s) in guild ${guild.id}.`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `[scrum] Failed to sync start messages for guild ${guild.id}:`,
+          error,
+        );
+      }
+
+      try {
         await syncWeeklyForum(guild);
       } catch (error) {
         console.error(

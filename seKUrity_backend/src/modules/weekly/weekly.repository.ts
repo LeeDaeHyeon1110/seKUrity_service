@@ -44,7 +44,11 @@ import {
   weeklyMissCountResets,
 } from '../../db/schema';
 import { ApiError } from '../../errors';
-import { getWeeklyCycleEnd } from '../weeklyCycle';
+import {
+  getWeeklyReportCycleEnd,
+  isWeeklyReportDeadlineClosed,
+  isWeeklyReportReminderWindow,
+} from '../weeklyCycle';
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 type WeeklyReportRow = typeof weeklyReports.$inferSelect;
@@ -94,11 +98,11 @@ function getKstDateString(date = new Date()): string {
 
 export function assertWeeklyReportSubmissionDate(
   weekEnd: string,
-  currentKstDate = getKstDateString(),
+  current: Date | string = new Date(),
 ): void {
   getWeekPeriod(weekEnd);
 
-  if (weekEnd !== getWeeklyCycleEnd(currentKstDate)) {
+  if (weekEnd !== getWeeklyReportCycleEnd(current)) {
     throw new ApiError(
       409,
       'WEEKLY_REPORT_DATE_CLOSED',
@@ -321,13 +325,13 @@ export class WeeklyRepository {
     input: ProcessWeeklyReportMissesBody,
   ): Promise<string[]> {
     getWeekPeriod(input.weekEnd);
-    const currentKstDate = this.weeklyTestDate ?? getKstDateString();
+    const current = this.weeklyTestDate ?? new Date();
 
-    if (input.weekEnd >= currentKstDate) {
+    if (!isWeeklyReportDeadlineClosed(input.weekEnd, current)) {
       throw new ApiError(
         409,
         'WEEKLY_REPORT_DEADLINE_NOT_CLOSED',
-        'Missing reports can only be counted after their Sunday deadline.',
+        'Missing reports can only be counted after Tuesday at 19:00 KST.',
       );
     }
 
@@ -413,19 +417,13 @@ export class WeeklyRepository {
     input: ProcessWeeklyReportRemindersBody,
   ): Promise<string[]> {
     getWeekPeriod(input.weekEnd);
-    const now = new Date();
-    const currentKstDate = this.weeklyTestDate ?? getKstDateString(now);
-    const currentKstHour = new Date(now.getTime() + 9 * 60 * 60 * 1_000)
-      .getUTCHours();
+    const current = this.weeklyTestDate ?? new Date();
 
-    if (
-      input.weekEnd !== currentKstDate
-      || (!this.weeklyTestDate && currentKstHour < 12)
-    ) {
+    if (!isWeeklyReportReminderWindow(input.weekEnd, current)) {
       throw new ApiError(
         409,
         'WEEKLY_REPORT_REMINDER_DATE_INVALID',
-        'Reminders can only be processed after noon on the current Sunday.',
+        'Reminders can only be processed from Tuesday noon until 19:00 KST.',
       );
     }
 
@@ -804,7 +802,7 @@ export class WeeklyRepository {
   ): Promise<WeeklyReport> {
     assertWeeklyReportSubmissionDate(
       input.weekEnd,
-      this.weeklyTestDate ?? getKstDateString(),
+      this.weeklyTestDate ?? new Date(),
     );
     const preview = await this.getPreview(guildId, input.userId, input.weekEnd);
     const existing = preview.existingReportId
@@ -884,7 +882,7 @@ export class WeeklyRepository {
   ): Promise<WeeklyReport> {
     assertWeeklyReportSubmissionDate(
       input.weekEnd,
-      this.weeklyTestDate ?? getKstDateString(),
+      this.weeklyTestDate ?? new Date(),
     );
     assertResultRequirements(input.extraItems);
     const preview = await this.getPreview(guildId, input.userId, input.weekEnd);
@@ -969,7 +967,7 @@ export class WeeklyRepository {
     if (input.actorType !== 'administrator') {
       assertWeeklyReportSubmissionDate(
         existing.weekEnd,
-        this.weeklyTestDate ?? getKstDateString(),
+        this.weeklyTestDate ?? new Date(),
       );
     }
 
@@ -1074,9 +1072,7 @@ export class WeeklyRepository {
 
       if (
         report.weekEnd
-        !== getWeeklyCycleEnd(
-          this.weeklyTestDate ?? getKstDateString(),
-        )
+        !== getWeeklyReportCycleEnd(this.weeklyTestDate ?? new Date())
       ) {
         throw new ApiError(
           409,

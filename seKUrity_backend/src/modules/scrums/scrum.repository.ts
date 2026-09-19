@@ -5,6 +5,7 @@ import {
   desc,
   eq,
   inArray,
+  isNull,
 } from 'drizzle-orm';
 import type {
   AbandonScrumBody,
@@ -19,6 +20,7 @@ import type {
   UpdateScrumCompletionResultsBody,
   UpdateScrumEntryBody,
   UpdateScrumEntryResultsBody,
+  UpdateScrumInitialTodosBody,
   UpdateScrumMetadataBody,
 } from '../../contracts';
 import type { Database } from '../../db/database';
@@ -69,11 +71,6 @@ function nextWeeklyDate(date: string): string {
   const parsed = new Date(`${date}T00:00:00.000Z`);
   parsed.setUTCDate(parsed.getUTCDate() + 7);
   return parsed.toISOString().slice(0, 10);
-}
-
-function getKstDateString(date = new Date()): string {
-  const shifted = new Date(date.getTime() + 9 * 60 * 60 * 1_000);
-  return shifted.toISOString().slice(0, 10);
 }
 
 function assertResultRequirements(results: ScrumResult[]): void {
@@ -438,6 +435,107 @@ export class ScrumRepository {
     return updated;
   }
 
+  async updateInitialTodosByThread(
+    threadId: string,
+    input: UpdateScrumInitialTodosBody,
+  ): Promise<Scrum> {
+    const currentTodos = [...new Set(
+      input.currentTodos.map((todo) => todo.trim()).filter(Boolean),
+    )];
+
+    if (currentTodos.length === 0) {
+      throw new ApiError(
+        400,
+        'SCRUM_TODOS_REQUIRED',
+        'At least one initial scrum todo is required.',
+      );
+    }
+
+    const scrumId = await this.database.transaction(async (transaction) => {
+      const [scrum] = await transaction
+        .select()
+        .from(scrums)
+        .where(eq(scrums.threadId, threadId))
+        .for('update')
+        .limit(1);
+
+      if (!scrum) {
+        throw new ApiError(404, 'SCRUM_NOT_FOUND', 'Scrum not found.');
+      }
+
+      if (scrum.status !== 'active') {
+        throw new ApiError(
+          409,
+          'SCRUM_NOT_ACTIVE',
+          'Only an active scrum can be edited.',
+        );
+      }
+
+      const [memberRows, entryRows] = await Promise.all([
+        transaction
+          .select({ userId: scrumMembers.userId })
+          .from(scrumMembers)
+          .where(and(
+            eq(scrumMembers.scrumId, scrum.id),
+            eq(scrumMembers.userId, input.updatedBy),
+          ))
+          .limit(1),
+        transaction
+          .select({ id: scrumEntries.id })
+          .from(scrumEntries)
+          .where(eq(scrumEntries.scrumId, scrum.id))
+          .limit(1),
+      ]);
+
+      if (!memberRows[0]) {
+        throw new ApiError(
+          403,
+          'SCRUM_MEMBER_REQUIRED',
+          'Only a scrum member can edit its initial todos.',
+        );
+      }
+
+      if (entryRows[0]) {
+        throw new ApiError(
+          409,
+          'SCRUM_INITIAL_TODOS_LOCKED',
+          'Initial todos cannot be edited after the first scrum entry.',
+        );
+      }
+
+      await transaction
+        .delete(scrumCurrentTodos)
+        .where(eq(scrumCurrentTodos.scrumId, scrum.id));
+      await transaction.insert(scrumCurrentTodos).values(
+        currentTodos.map((content, position) => ({
+          id: randomUUID(),
+          scrumId: scrum.id,
+          content,
+          position,
+        })),
+      );
+      await transaction
+        .update(scrums)
+        .set({ updatedAt: new Date() })
+        .where(eq(scrums.id, scrum.id));
+
+      return scrum.id;
+    });
+    const [updated] = await this.hydrate(
+      await this.database
+        .select()
+        .from(scrums)
+        .where(eq(scrums.id, scrumId))
+        .limit(1),
+    );
+
+    if (!updated) {
+      throw new ApiError(500, 'SCRUM_UPDATE_FAILED', 'Scrum update failed.');
+    }
+
+    return updated;
+  }
+
   async updateEntry(
     entryId: string,
     input: UpdateScrumEntryBody,
@@ -496,7 +594,7 @@ export class ScrumRepository {
 
         if (
           entry.scrumDate
-          !== getWeeklyCycleEnd(this.weeklyTestDate ?? getKstDateString())
+          !== getWeeklyCycleEnd(this.weeklyTestDate ?? new Date())
         ) {
           throw new ApiError(
             409,
@@ -976,6 +1074,21 @@ export class ScrumRepository {
     return this.hydrate(rows.map((row) => row.scrum));
   }
 
+  async getInitialTodosEditableForGuild(guildId: string): Promise<Scrum[]> {
+    const rows = await this.database
+      .select({ scrum: scrums })
+      .from(scrums)
+      .leftJoin(scrumEntries, eq(scrumEntries.scrumId, scrums.id))
+      .where(and(
+        eq(scrums.guildId, guildId),
+        eq(scrums.status, 'active'),
+        isNull(scrumEntries.id),
+      ))
+      .orderBy(desc(scrums.createdAt));
+
+    return this.hydrate(rows.map((row) => row.scrum));
+  }
+
   async getActiveForUserById(
     scrumId: string,
     guildId: string,
@@ -1026,7 +1139,7 @@ export class ScrumRepository {
       ...input.extraItems,
     ]);
     const currentCycleEnd = getWeeklyCycleEnd(
-      this.weeklyTestDate ?? getKstDateString(),
+      this.weeklyTestDate ?? new Date(),
     );
 
     if (input.scrumDate !== currentCycleEnd) {
@@ -1218,7 +1331,7 @@ export class ScrumRepository {
       if (
         entry.scrumDate
         !== getWeeklyCycleEnd(
-          this.weeklyTestDate ?? getKstDateString(),
+          this.weeklyTestDate ?? new Date(),
         )
       ) {
         throw new ApiError(
