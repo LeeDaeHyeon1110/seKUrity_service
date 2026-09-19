@@ -244,12 +244,12 @@ export default function Home() {
           <div className="contact-list">
             <article className="contact-card" data-reveal>
               <div className="contact-role"><strong>회장</strong></div>
-              <a href="mailto:dleogus0910@kku.ac.kr">dleogus0910@kku.ac.kr <span>↗</span></a>
+              <a href="mailto:admin@sekurity.kr">admin@sekurity.kr <span>↗</span></a>
               <a href="tel:01063757718">010-6375-7718 <span>↗</span></a>
             </article>
             <article className="contact-card" data-reveal>
               <div className="contact-role"><strong>부회장</strong></div>
-              <a href="mailto:junhyeok1021@hanmail.net">junhyeok1021@hanmail.net <span>↗</span></a>
+              <a href="mailto:vice@sekurity.kr">vice@sekurity.kr <span>↗</span></a>
               <a href="tel:01056752442">010-5675-2442 <span>↗</span></a>
             </article>
           </div>
