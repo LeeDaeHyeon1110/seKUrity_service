@@ -13,7 +13,10 @@ import {
   buildScrumCompletionRow,
   buildScrumStartRow,
 } from '../src/scrums/components';
-import { getKstDateString } from '../src/scrums/dateUtils';
+import {
+  getCurrentWeeklyCycleEndKstDateString,
+  getScrumDeadlineDateString,
+} from '../src/scrums/dateUtils';
 import {
   buildScrumIntroEmbed,
   buildScrumTodoEmbed,
@@ -88,8 +91,8 @@ async function main(): Promise<void> {
       throw new Error('The bot is missing required permissions in the scrum forum.');
     }
 
-    const nextScrumDate = getKstDateString();
-    const projectName = `스크럼 테스트 ${nextScrumDate}`;
+    const nextScrumDate = getCurrentWeeklyCycleEndKstDateString();
+    const projectName = `스크럼 테스트 ${getScrumDeadlineDateString(nextScrumDate)}`;
     const category = ScrumCategory.Study;
     const ownerIds = [testUserId];
     const overview = '스크럼 작성 흐름과 링크, 첨부파일, 미완료 표시를 확인하기 위한 테스트 프로젝트입니다.';

@@ -55,6 +55,8 @@ import {
   formatScrumDate,
   getCurrentWeeklyCycleEndKstDateString,
   getKstDateString,
+  getScrumCycleDateString,
+  getScrumDeadlineDateString,
 } from '../src/scrums/dateUtils';
 import { resolveWeeklyTestDate } from '../src/config/weeklyTestDate';
 import { ScrumCategory } from '../src/scrums/categories';
@@ -658,7 +660,7 @@ const newTodoLabels = newTodosJson.components
   .map((component) => component.label);
 assert.deepEqual(newTodoLabels, ['첫 스크럼까지 진행할 작업']);
 assert(!JSON.stringify(newTodosJson).includes('산출물'));
-assert(JSON.stringify(newTodosJson).includes('2026-07-19 (일요일)'));
+assert(JSON.stringify(newTodosJson).includes('2026-07-21 (화요일) 19:00'));
 
 const completionModalJson = buildCompletionTodoModal(
   sessionId,
@@ -1132,12 +1134,19 @@ assert(completedSummaryFields.some((field) => field.value.includes('[미완료]'
 assert(!completedSummaryFields.some((field) => field.value.includes('예정 작업')));
 assert(!completedSummaryFields.some((field) => field.value.includes('추가 작업')));
 assert(!/^\d+\./m.test(summaryJson.fields?.[0].value ?? ''));
-assert.equal(formatScrumDate('2026-07-19'), '2026-07-19 (일요일)');
+assert.equal(
+  formatScrumDate('2026-07-19'),
+  '2026-07-21 (화요일) 19:00',
+);
+assert.equal(getScrumDeadlineDateString('2026-07-19'), '2026-07-21');
+assert.equal(getScrumCycleDateString('2026-07-21'), '2026-07-19');
+assert.equal(getScrumCycleDateString('2026-07-19'), '2026-07-19');
+assert.throws(() => getScrumCycleDateString('2026-07-20'));
 assert.equal(
   formatTaskRecordSaved('작업명'),
   '**[ 작업명 ]** 에 대한 기록을 저장했습니다.',
 );
-assert.equal(summaryJson.title, '스크럼 - 2026-07-19');
+assert.equal(summaryJson.title, '스크럼 - 2026-07-21');
 assert.equal(
   getCurrentWeeklyCycleEndKstDateString(new Date('2026-08-01T03:00:00.000Z')),
   '2026-08-02',
@@ -1251,7 +1260,7 @@ assert.equal(todoEmbed.color, 0x57f287);
 assert.equal(todoEmbed.title, '스크럼 - 시작');
 assert.equal(
   todoEmbed.description,
-  `**다음 스크럼 날짜**: ${formatScrumDate(scrum.nextScrumDate)}`,
+  `**다음 스크럼 마감**: ${formatScrumDate(scrum.nextScrumDate)}`,
 );
 assert.equal(todoEmbed.fields?.length, 1);
 assert.equal(todoEmbed.fields?.[0].name, '다음 스크럼까지 진행할 작업');
@@ -1393,7 +1402,7 @@ const nextTodoPreview = buildTodoStepPreview(
 assert(todoPreview.length <= 2_000);
 assert(todoPreview.includes('**마감일**:'));
 assert(!todoPreview.includes('예정일'));
-assert(overdueTodoPreview.includes('2026-07-26 (일요일)'));
+assert(overdueTodoPreview.includes('2026-07-28 (화요일) 19:00'));
 assert(!overdueTodoPreview.includes(previewScrum.nextScrumDate));
 assert(todoPreview.includes('기록할 작업 (1/10)'));
 assert(todoPreview.includes('- planned task'));

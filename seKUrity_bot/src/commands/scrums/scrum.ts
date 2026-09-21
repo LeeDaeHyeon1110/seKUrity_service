@@ -69,7 +69,7 @@ const command: Command = {
         content: hasSubmittedScrum
           ? [
             '이번 주 스크럼이 이미 작성돼있습니다.',
-            `다음 주 스크럼은 ${formatScrumDate(getNextWeeklyScrumDateString(scrumDate))} 주차부터 작성할 수 있습니다.`,
+            `다음 스크럼 마감은 ${formatScrumDate(getNextWeeklyScrumDateString(scrumDate))}입니다.`,
           ].join('\n')
           : '이번 주차에 작성할 수 있는 스크럼이 없습니다.',
         flags: MessageFlags.Ephemeral,

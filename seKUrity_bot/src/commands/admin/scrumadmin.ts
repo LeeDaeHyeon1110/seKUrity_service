@@ -9,6 +9,10 @@ import {
   buildAdminMarkIncompleteTaskRow,
 } from '../../scrums/components';
 import {
+  formatScrumDate,
+  getScrumCycleDateString,
+} from '../../scrums/dateUtils';
+import {
   getActiveScrumByThread,
   getLatestScrumEntryByThread,
 } from '../../scrums/scrumStore';
@@ -32,7 +36,7 @@ const command: Command = {
         .addStringOption((option) =>
           option
             .setName('date')
-            .setDescription('대상 스크럼 주차 (YYYY-MM-DD, 생략 시 최근 기록)')
+            .setDescription('대상 스크럼 마감일 (화요일 YYYY-MM-DD, 생략 시 최근 기록)')
             .setMinLength(10)
             .setMaxLength(10),
         ),
@@ -75,11 +79,25 @@ const command: Command = {
       return;
     }
 
-    const scrumDate = interaction.options.getString('date')?.trim();
+    const requestedDate = interaction.options.getString('date')?.trim();
 
-    if (scrumDate && !/^\d{4}-\d{2}-\d{2}$/.test(scrumDate)) {
+    if (requestedDate && !/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
       await interaction.reply({
         content: '`date`는 `YYYY-MM-DD` 형식으로 입력해 주세요.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    let scrumDate: string | undefined;
+
+    try {
+      scrumDate = requestedDate
+        ? getScrumCycleDateString(requestedDate)
+        : undefined;
+    } catch {
+      await interaction.reply({
+        content: '`date`에는 화요일 스크럼 마감일을 입력해 주세요.',
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -104,7 +122,7 @@ const command: Command = {
       }
 
       await interaction.reply({
-        content: `${entry.scrumDate} 주차에서 미완료 처리하거나 삭제할 작업을 선택해 주세요.`,
+        content: `${formatScrumDate(entry.scrumDate)} 마감 스크럼에서 미완료 처리하거나 삭제할 작업을 선택해 주세요.`,
         components: [buildAdminMarkIncompleteTaskRow(entry)],
         flags: MessageFlags.Ephemeral,
       });
@@ -112,7 +130,7 @@ const command: Command = {
       if (error instanceof BackendApiError && error.status === 404) {
         await interaction.reply({
           content: scrumDate
-            ? `${scrumDate} 주차의 스크럼 기록을 찾을 수 없습니다.`
+            ? `${formatScrumDate(scrumDate)} 마감 스크럼 기록을 찾을 수 없습니다.`
             : '제출된 스크럼 기록을 찾을 수 없습니다.',
           flags: MessageFlags.Ephemeral,
         });

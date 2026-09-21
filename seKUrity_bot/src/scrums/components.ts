@@ -176,7 +176,7 @@ export function buildNewScrumTodosModal(
     .setTitle('첫 진행할 작업 입력')
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `다음 스크럼 날짜: **${formatScrumDate(nextScrumDate)}**`,
+        `첫 스크럼 마감: **${formatScrumDate(nextScrumDate)}**`,
       ),
     )
     .addLabelComponents(
@@ -294,7 +294,7 @@ export function buildScrumSelectRow(scrums: Scrum[]): ActionRowBuilder<StringSel
   const options = scrums.slice(0, 25).map((scrum) =>
     new StringSelectMenuOptionBuilder()
       .setLabel(truncateText(scrum.projectName, 100))
-      .setDescription(`다음 스크럼: ${formatScrumDate(scrum.nextScrumDate)}`)
+      .setDescription(`다음 마감: ${formatScrumDate(scrum.nextScrumDate)}`)
       .setValue(scrum.id),
   );
 
@@ -765,7 +765,7 @@ export function buildEntryNextTodosModal(
     .setTitle('다음 스크럼까지 진행할 작업 수정')
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `다음 스크럼: **${formatScrumDate(entry.nextScrumDate)}**`,
+        `다음 스크럼 마감: **${formatScrumDate(entry.nextScrumDate)}**`,
       ),
     )
     .addLabelComponents(
@@ -793,7 +793,7 @@ export function buildInitialTodosEditModal(
     .setTitle('첫 진행할 작업 수정')
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `첫 스크럼 날짜: **${formatScrumDate(scrum.nextScrumDate)}**`,
+        `첫 스크럼 마감: **${formatScrumDate(scrum.nextScrumDate)}**`,
       ),
     )
     .addLabelComponents(
@@ -1075,7 +1075,7 @@ export function buildCarryoverTodosModal(
     .setTitle('미완료 작업 이월')
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent([
-        `다음 스크럼 날짜: **${formatScrumDate(nextScrumDate)}**`,
+        `다음 스크럼 마감: **${formatScrumDate(nextScrumDate)}**`,
         '다음 스크럼에도 이어서 진행할 미완료 작업을 선택해 주세요.',
       ].join('\n')),
     )
@@ -1100,7 +1100,7 @@ export function buildNextTodosModal(
   carryoverTodos: string[] = [],
 ): ModalBuilder {
   const display = [
-    `다음 스크럼 날짜: **${formatScrumDate(nextScrumDate)}**`,
+    `다음 스크럼 마감: **${formatScrumDate(nextScrumDate)}**`,
   ];
 
   if (carryoverTodos.length > 0) {

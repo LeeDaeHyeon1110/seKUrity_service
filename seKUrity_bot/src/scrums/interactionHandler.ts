@@ -132,7 +132,7 @@ import {
   updateScrumInitialTodos,
   updateScrumMetadata,
 } from './scrumStore';
-import { setScrumStartEditingEnabled } from './startMessageSync';
+import { refreshScrumStartMessage } from './startMessageSync';
 import {
   formatApprovalThreadName,
   formatScrumThreadName,
@@ -640,8 +640,8 @@ async function rejectOutsideScheduledDate(
 
   const response = {
     content: [
-      `이 작성 세션은 ${formatScrumDate(session.scrumDate)} 주차에만 유효합니다.`,
-      `현재 작성 가능한 주차는 ${formatScrumDate(currentScrumDate)}입니다.`,
+      `이 작성 세션의 마감은 ${formatScrumDate(session.scrumDate)}이었습니다.`,
+      `현재 작성 가능한 스크럼 마감은 ${formatScrumDate(currentScrumDate)}입니다.`,
     ].join('\n'),
     flags: MessageFlags.Ephemeral,
   } satisfies InteractionReplyOptions;
@@ -792,7 +792,7 @@ export async function startScrumSessionFromInteraction(
     await interaction.reply({
       content: [
         '이번 주 스크럼이 이미 작성돼있습니다.',
-        `다음 주 스크럼은 ${formatScrumDate(getNextWeeklyScrumDateString(scrumDate))} 주차부터 작성할 수 있습니다.`,
+        `다음 스크럼 마감은 ${formatScrumDate(getNextWeeklyScrumDateString(scrumDate))}입니다.`,
       ].join('\n'),
       flags: MessageFlags.Ephemeral,
     });
@@ -802,8 +802,8 @@ export async function startScrumSessionFromInteraction(
   if (scrum.nextScrumDate > scrumDate) {
     await interaction.reply({
       content: [
-        `이 스크럼은 ${formatScrumDate(scrum.nextScrumDate)} 주차부터 작성할 수 있습니다.`,
-        `현재 작성 가능한 주차는 ${formatScrumDate(scrumDate)}입니다.`,
+        `이 스크럼의 첫 마감은 ${formatScrumDate(scrum.nextScrumDate)}입니다.`,
+        `현재 작성 가능한 스크럼 마감은 ${formatScrumDate(scrumDate)}입니다.`,
       ].join('\n'),
       flags: MessageFlags.Ephemeral,
     });
@@ -2160,7 +2160,7 @@ export async function startScrumEntryEditFromInteraction(
 
     await interaction.editReply({
       content: [
-        `${entry.scrumDate} 주차 스크럼을 수정합니다.`,
+        `${formatScrumDate(entry.scrumDate)} 마감 스크럼을 수정합니다.`,
         `미완료 작업: **${incompleteCount}개**`,
         '스크럼 수정으로 어떤 작업을 하시겠습니까?',
       ].join('\n'),
@@ -4295,10 +4295,18 @@ async function handleNextTodosModal(interaction: ModalSubmitInteraction, session
     }
 
     try {
-      await setScrumStartEditingEnabled(thread, false);
+      await refreshScrumStartMessage(
+        thread,
+        {
+          ...session.scrum,
+          currentTodos: nextTodos,
+          nextScrumDate: entry.nextScrumDate,
+        },
+        false,
+      );
     } catch (error) {
       console.warn(
-        `[scrum] Failed to disable initial todo editing in ${thread.id}:`,
+        `[scrum] Failed to refresh start message in ${thread.id}:`,
         error,
       );
     }
@@ -4320,12 +4328,12 @@ async function handleNextTodosModal(interaction: ModalSubmitInteraction, session
     interaction,
     thread && !threadWriteFailed
       ? [
-        `<#${thread.id}>에 스크럼 기록을 저장했습니다. 다음 스크럼 날짜는 ${formatScrumDate(entry.nextScrumDate)}입니다.`,
+        `<#${thread.id}>에 스크럼 기록을 저장했습니다. 다음 스크럼 마감은 ${formatScrumDate(entry.nextScrumDate)}입니다.`,
         evidenceUploadFailures > 0
           ? `증빙 파일 ${evidenceUploadFailures}개는 포럼 게시물에 영구 보관하지 못했습니다.`
           : '',
       ].filter(Boolean).join('\n')
-      : `스크럼 기록은 DB에 저장했지만 포럼 게시물 메시지 전송에는 실패했습니다. 다음 스크럼 날짜는 ${formatScrumDate(entry.nextScrumDate)}입니다.`,
+      : `스크럼 기록은 DB에 저장했지만 포럼 게시물 메시지 전송에는 실패했습니다. 다음 스크럼 마감은 ${formatScrumDate(entry.nextScrumDate)}입니다.`,
   );
 }
 

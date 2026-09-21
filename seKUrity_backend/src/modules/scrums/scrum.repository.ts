@@ -1074,6 +1074,19 @@ export class ScrumRepository {
     return this.hydrate(rows.map((row) => row.scrum));
   }
 
+  async getActiveForGuild(guildId: string): Promise<Scrum[]> {
+    const rows = await this.database
+      .select()
+      .from(scrums)
+      .where(and(
+        eq(scrums.guildId, guildId),
+        eq(scrums.status, 'active'),
+      ))
+      .orderBy(desc(scrums.createdAt));
+
+    return this.hydrate(rows);
+  }
+
   async getInitialTodosEditableForGuild(guildId: string): Promise<Scrum[]> {
     const rows = await this.database
       .select({ scrum: scrums })

@@ -1,7 +1,7 @@
 import { Events } from 'discord.js';
 import type { Client } from 'discord.js';
 import { syncConfiguredScrumGuidePost } from '../scrums/forumGuide';
-import { syncEditableScrumStartMessages } from '../scrums/startMessageSync';
+import { syncScrumPostMessages } from '../scrums/startMessageSync';
 import { reconcileDeletedConfiguredChannels } from '../storage/configuredChannelCleanup';
 import { syncWeeklyForum } from '../weekly/forumSync';
 import { startWeeklyMissScheduler } from '../weekly/missScheduler';
@@ -45,16 +45,16 @@ export default {
       }
 
       try {
-        const synchronized = await syncEditableScrumStartMessages(guild);
+        const synchronized = await syncScrumPostMessages(guild);
 
         if (synchronized > 0) {
           console.log(
-            `[scrum] Synchronized ${synchronized} editable start message(s) in guild ${guild.id}.`,
+            `[scrum] Synchronized ${synchronized} active scrum post(s) in guild ${guild.id}.`,
           );
         }
       } catch (error) {
         console.error(
-          `[scrum] Failed to sync start messages for guild ${guild.id}:`,
+          `[scrum] Failed to sync active posts for guild ${guild.id}:`,
           error,
         );
       }

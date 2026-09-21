@@ -45,13 +45,49 @@ function parseDateOnly(value: string): Date {
 }
 
 export function formatScrumDate(value: string): string {
-  const date = parseDateOnly(value);
+  const deadlineDate = getScrumDeadlineDateString(value);
+  const date = parseDateOnly(deadlineDate);
   const weekday = new Intl.DateTimeFormat('ko-KR', {
     weekday: 'long',
     timeZone: 'UTC',
   }).format(date);
 
-  return `${value} (${weekday})`;
+  return `${deadlineDate} (${weekday}) 19:00`;
+}
+
+export function getScrumDeadlineDateString(
+  scrumDate: string,
+): string {
+  const deadline = parseDateOnly(scrumDate);
+  deadline.setUTCDate(deadline.getUTCDate() + 2);
+
+  return formatDateOnly(
+    deadline.getUTCFullYear(),
+    deadline.getUTCMonth() + 1,
+    deadline.getUTCDate(),
+  );
+}
+
+export function getScrumCycleDateString(
+  displayedDate: string,
+): string {
+  const date = parseDateOnly(displayedDate);
+
+  if (date.getUTCDay() === TUESDAY) {
+    date.setUTCDate(date.getUTCDate() - 2);
+
+    return formatDateOnly(
+      date.getUTCFullYear(),
+      date.getUTCMonth() + 1,
+      date.getUTCDate(),
+    );
+  }
+
+  if (date.getUTCDay() === SUNDAY) {
+    return displayedDate;
+  }
+
+  throw new Error('Scrum date must be a Tuesday deadline.');
 }
 
 export function getKstDateString(date?: Date): string {

@@ -19,7 +19,7 @@ import {
   ForumTagConfigurationError,
 } from '../../scrums/forumTags';
 import { ensureScrumGuidePost } from '../../scrums/forumGuide';
-import { syncEditableScrumStartMessages } from '../../scrums/startMessageSync';
+import { syncScrumPostMessages } from '../../scrums/startMessageSync';
 import { setChannel } from '../../storage/guildSettingsStore';
 import type { Command } from '../../types/discord';
 import {
@@ -245,12 +245,12 @@ const command: Command = {
 
       if (interaction.guild) {
         try {
-          const synchronized = await syncEditableScrumStartMessages(
+          const synchronized = await syncScrumPostMessages(
             interaction.guild,
           );
 
           if (synchronized > 0) {
-            guideResult += `\n수정 가능한 기존 시작 메시지 ${synchronized}개를 동기화했습니다.`;
+            guideResult += `\n기존 활성 스크럼 게시물 ${synchronized}개를 동기화했습니다.`;
           }
         } catch (error) {
           console.error(

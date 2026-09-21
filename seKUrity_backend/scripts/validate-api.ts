@@ -508,6 +508,11 @@ async function main(): Promise<void> {
     assert(openApi.json().paths['/internal/v1/scrums']);
     assert(
       openApi.json().paths[
+        '/internal/v1/guilds/{guildId}/scrums/active-all'
+      ],
+    );
+    assert(
+      openApi.json().paths[
         '/internal/v1/guilds/{guildId}/scrums/initial-todos-editable'
       ],
     );

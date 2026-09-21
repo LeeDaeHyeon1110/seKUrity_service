@@ -350,6 +350,27 @@ export function createScrumRoutes(
     );
 
     fastify.get<{ Params: GuildParams }>(
+      '/guilds/:guildId/scrums/active-all',
+      {
+        schema: {
+          tags: ['internal-scrums'],
+          params: Type.Object({ guildId: DiscordIdSchema }),
+          response: {
+            200: Type.Object({
+              scrums: Type.Array(ScrumSchema),
+            }),
+            401: ErrorResponseSchema,
+          },
+        },
+      },
+      async (request) => ({
+        scrums: await repository.getActiveForGuild(
+          request.params.guildId,
+        ),
+      }),
+    );
+
+    fastify.get<{ Params: GuildParams }>(
       '/guilds/:guildId/scrums/initial-todos-editable',
       {
         schema: {

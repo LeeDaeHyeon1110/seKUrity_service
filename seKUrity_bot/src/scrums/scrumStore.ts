@@ -181,6 +181,20 @@ export async function getInitialTodosEditableScrums(
   return response.scrums;
 }
 
+export async function getActiveScrumsForGuild(
+  guildId: string,
+): Promise<Scrum[]> {
+  const response = await backendRequest<{ scrums: Scrum[] }>(
+    [
+      '/internal/v1/guilds',
+      encodeURIComponent(guildId),
+      'scrums/active-all',
+    ].join('/'),
+  );
+
+  return response.scrums;
+}
+
 export async function getActiveScrumForUser(
   scrumId: string,
   guildId: string,

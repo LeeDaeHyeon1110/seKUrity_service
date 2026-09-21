@@ -1,7 +1,10 @@
 import { EmbedBuilder, escapeMarkdown } from 'discord.js';
 import { SCRUM_CATEGORY_LABELS } from './categories';
 import type { Scrum, ScrumEntry, ScrumRequest } from './types';
-import { formatScrumDate } from './dateUtils';
+import {
+  formatScrumDate,
+  getScrumDeadlineDateString,
+} from './dateUtils';
 import { formatList, truncateText } from './text';
 
 export const SCRUM_START_EMBED_TITLE = '스크럼 - 시작';
@@ -92,7 +95,7 @@ export function buildScrumTodoEmbed(
   return new EmbedBuilder()
     .setColor(0x57f287)
     .setTitle(SCRUM_START_EMBED_TITLE)
-    .setDescription(`**다음 스크럼 날짜**: ${formatScrumDate(scrum.nextScrumDate)}`)
+    .setDescription(`**다음 스크럼 마감**: ${formatScrumDate(scrum.nextScrumDate)}`)
     .addFields(
       {
         name: '다음 스크럼까지 진행할 작업',
@@ -174,8 +177,8 @@ export function buildScrumExtraDeletionDmEmbed(input: {
         inline: true,
       },
       {
-        name: '스크럼 날짜',
-        value: input.scrumDate,
+        name: '스크럼 마감',
+        value: formatScrumDate(input.scrumDate),
         inline: true,
       },
       {
@@ -399,8 +402,8 @@ export function buildScrumEntrySummaryEmbed(entry: ScrumEntry): EmbedBuilder {
 
   return new EmbedBuilder()
     .setColor(hasIncompleteItem ? 0xed4245 : 0x57f287)
-    .setTitle(`스크럼 - ${entry.scrumDate}`)
-    .setDescription(`**다음 스크럼 날짜**: ${formatScrumDate(entry.nextScrumDate)}`)
+    .setTitle(`스크럼 - ${getScrumDeadlineDateString(entry.scrumDate)}`)
+    .setDescription(`**다음 스크럼 마감**: ${formatScrumDate(entry.nextScrumDate)}`)
     .addFields(
       ...completedChunks.map((value, index) => ({
         name: index === 0 ? '완료한 작업' : '완료한 작업 (계속)',
