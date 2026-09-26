@@ -9,6 +9,7 @@ import { createApprovalRoutes } from './modules/approvals/approval.routes';
 import { createChannelRoutes } from './modules/channels/channel.routes';
 import { createScrumRoutes } from './modules/scrums/scrum.routes';
 import { createWeeklyRoutes } from './modules/weekly/weekly.routes';
+import { createWebMemberSyncRoutes, createWebRoutes } from './modules/web/web.routes';
 import { createInternalAuthHook } from './plugins/internalAuth';
 
 export interface BuildAppOptions {
@@ -19,11 +20,18 @@ export interface BuildAppOptions {
 
 export async function buildApp(options: BuildAppOptions) {
   const app = Fastify({
+    // Production traffic reaches the backend through the co-located Nginx
+    // container. Trust only loopback/private proxy hops so rate limits use
+    // the original client address without accepting arbitrary public
+    // X-Forwarded-For headers.
+    trustProxy: options.config.nodeEnv === 'production'
+      ? ['loopback', 'linklocal', 'uniquelocal']
+      : false,
     logger: options.config.nodeEnv === 'test'
       ? false
       : {
         level: options.config.nodeEnv === 'production' ? 'info' : 'debug',
-        redact: ['req.headers.authorization'],
+        redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
       },
     requestIdHeader: 'x-request-id',
   });
@@ -40,6 +48,11 @@ export async function buildApp(options: BuildAppOptions) {
           internalBearer: {
             type: 'http',
             scheme: 'bearer',
+          },
+          webSession: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: 'sekurity_session',
           },
         },
       },
@@ -66,6 +79,14 @@ export async function buildApp(options: BuildAppOptions) {
       void reply.code(400).send({
         code: 'VALIDATION_ERROR',
         message: fastifyError.message ?? 'Request validation failed.',
+      });
+      return;
+    }
+
+    if (fastifyError.code === 'FST_REQ_FILE_TOO_LARGE') {
+      void reply.code(413).send({
+        code: 'PROFILE_PHOTO_TOO_LARGE',
+        message: 'The profile photo must be 5 MiB or smaller.',
       });
       return;
     }
@@ -134,8 +155,16 @@ export async function buildApp(options: BuildAppOptions) {
       options.database,
       options.config.weeklyTestDate,
     ));
+    await internal.register(createWebMemberSyncRoutes(
+      options.database,
+      options.config,
+    ));
   }, {
     prefix: '/internal/v1',
+  });
+
+  await app.register(createWebRoutes(options.database, options.config), {
+    prefix: '/api/v1',
   });
 
   app.get('/openapi.json', {

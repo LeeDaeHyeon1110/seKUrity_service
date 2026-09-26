@@ -66,6 +66,17 @@ async function main(): Promise<void> {
     nodeEnv: 'test',
     port: 3000,
     weeklyTestDate: null,
+    discordClientId: 'test-client-id',
+    discordClientSecret: 'test-client-secret',
+    discordRedirectUri: 'http://localhost:3000/api/v1/auth/discord/callback',
+    siteUrl: 'http://localhost:3000',
+    sessionSecret: 'test-session-secret-at-least-32-characters',
+    sessionTokenPepper: 'test-session-pepper-at-least-32-characters',
+    webAuthGuildId: '1507335622719967292',
+    webActiveMemberRoleId: '1507362589619912734',
+    webBoardMemberRoleId: '1507362663339135047',
+    uploadDir: '/tmp/sekurity-test-uploads',
+    uploadMaxBytes: 5 * 1024 * 1024,
   };
   const database = {
     execute: async () => [],
@@ -555,7 +566,41 @@ async function main(): Promise<void> {
     );
     assert(openApi.json().paths['/internal/v1/weekly-reports/{reportId}']);
 
-    console.log('Validated health, authentication, approval and weekly schemas, result requirements, and OpenAPI generation.');
+    const webAuthenticationRequired = await app.inject({
+      method: 'GET',
+      url: '/api/v1/me/summary',
+    });
+    assert.equal(webAuthenticationRequired.statusCode, 401);
+    assert.equal(webAuthenticationRequired.json().code, 'AUTHENTICATION_REQUIRED');
+
+    const webPaths = openApi.json().paths;
+    assert(webPaths['/api/v1/auth/discord']);
+    assert(webPaths['/api/v1/auth/discord/callback']);
+    assert(webPaths['/api/v1/me']);
+    assert(webPaths['/api/v1/me/summary']);
+    assert(webPaths['/api/v1/me/scores']);
+    assert(webPaths['/api/v1/me/attendance']);
+    assert(webPaths['/api/v1/me/profile']?.get);
+    assert(webPaths['/api/v1/me/profile']?.put);
+    assert(webPaths['/api/v1/me/profile/photo']?.post);
+    assert(webPaths['/api/v1/members']?.get);
+    assert(webPaths['/api/v1/members/{userId}/photo']?.get);
+    assert(webPaths['/api/v1/admin/members']?.get);
+    assert(webPaths['/api/v1/admin/members/{userId}/scores']?.post);
+    assert(webPaths['/api/v1/admin/score-events/{eventId}/void']?.post);
+    assert(webPaths['/api/v1/admin/attendance-sessions']?.get);
+    assert(webPaths['/api/v1/admin/attendance-sessions']?.post);
+    assert(webPaths['/api/v1/admin/attendance-sessions/{sessionId}']?.patch);
+    assert(
+      webPaths[
+        '/api/v1/admin/attendance-sessions/{sessionId}/records/{userId}'
+      ]?.patch,
+    );
+    assert(
+      webPaths['/internal/v1/guilds/{guildId}/web-members/sync']?.post,
+    );
+
+    console.log('Validated health, internal and browser authentication, domain schemas, and OpenAPI route generation.');
   } finally {
     await app.close();
   }
