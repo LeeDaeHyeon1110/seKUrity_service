@@ -1,7 +1,9 @@
 import { sql } from 'drizzle-orm';
 import {
   check,
+  boolean,
   date,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -528,5 +530,215 @@ export const weeklyReportDeletions = pgTable(
       table.guildId,
       table.weekEnd,
     ),
+  ],
+);
+
+/**
+ * Browser identities intentionally use an application UUID as their primary
+ * key. Discord snowflakes remain unique external identifiers, which lets us
+ * add another identity provider later without rewriting domain foreign keys.
+ */
+export const webUsers = pgTable(
+  'web_users',
+  {
+    id: uuid('id').primaryKey(),
+    discordUserId: text('discord_user_id').notNull(),
+    username: text('username').notNull(),
+    globalName: text('global_name'),
+    avatarHash: text('avatar_hash'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('web_users_discord_user_id_unique').on(table.discordUserId),
+  ],
+);
+
+export const webGuildMemberships = pgTable(
+  'web_guild_memberships',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => webUsers.id, { onDelete: 'cascade' }),
+    guildId: text('guild_id').notNull(),
+    guildNickname: text('guild_nickname'),
+    roleIds: jsonb('role_ids').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    isGuildMember: boolean('is_guild_member').notNull().default(false),
+    isActiveMember: boolean('is_active_member').notNull().default(false),
+    isBoardMember: boolean('is_board_member').notNull().default(false),
+    syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.guildId] }),
+    index('web_guild_memberships_guild_active_idx').on(
+      table.guildId,
+      table.isActiveMember,
+    ),
+  ],
+);
+
+export const webSessions = pgTable(
+  'web_sessions',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => webUsers.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    userAgent: text('user_agent'),
+    ipAddress: text('ip_address'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('web_sessions_token_hash_unique').on(table.tokenHash),
+    index('web_sessions_user_active_idx').on(table.userId, table.expiresAt),
+  ],
+);
+
+export const webOauthStates = pgTable(
+  'web_oauth_states',
+  {
+    stateHash: text('state_hash').primaryKey(),
+    returnTo: text('return_to').notNull().default('/'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index('web_oauth_states_expires_idx').on(table.expiresAt),
+  ],
+);
+
+export interface WebProfileLink {
+  label?: string;
+  url: string;
+}
+
+export const webMemberProfiles = pgTable(
+  'web_member_profiles',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => webUsers.id, { onDelete: 'cascade' }),
+    introduction: text('introduction').notNull().default(''),
+    specialties: jsonb('specialties').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    links: jsonb('links').$type<WebProfileLink[]>().notNull().default(sql`'[]'::jsonb`),
+    photoStorageKey: text('photo_storage_key'),
+    photoContentType: text('photo_content_type'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+);
+
+export const webScoreEvents = pgTable(
+  'web_score_events',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => webUsers.id, { onDelete: 'restrict' }),
+    amount: integer('amount').notNull(),
+    reason: text('reason').notNull(),
+    grantedBy: uuid('granted_by')
+      .notNull()
+      .references(() => webUsers.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    voidedAt: timestamp('voided_at', { withTimezone: true }),
+    voidReason: text('void_reason'),
+    voidedBy: uuid('voided_by')
+      .references(() => webUsers.id, { onDelete: 'restrict' }),
+  },
+  (table) => [
+    index('web_score_events_user_created_idx').on(table.userId, table.createdAt),
+    check('web_score_events_amount_positive_check', sql`${table.amount} > 0`),
+    check(
+      'web_score_events_void_state_check',
+      sql`(${table.voidedAt} IS NULL AND ${table.voidReason} IS NULL AND ${table.voidedBy} IS NULL)
+          OR (${table.voidedAt} IS NOT NULL AND ${table.voidReason} IS NOT NULL AND ${table.voidedBy} IS NOT NULL)`,
+    ),
+  ],
+);
+
+export const webAttendanceSessions = pgTable(
+  'web_attendance_sessions',
+  {
+    id: uuid('id').primaryKey(),
+    attendanceDate: date('attendance_date', { mode: 'string' }).notNull(),
+    status: text('status').notNull().default('open'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => webUsers.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    closedBy: uuid('closed_by').references(() => webUsers.id, { onDelete: 'restrict' }),
+    closedAt: timestamp('closed_at', { withTimezone: true }),
+    cancelledBy: uuid('cancelled_by').references(() => webUsers.id, { onDelete: 'restrict' }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    cancelledReason: text('cancelled_reason'),
+  },
+  (table) => [
+    uniqueIndex('web_attendance_sessions_date_unique').on(table.attendanceDate),
+    check('web_attendance_sessions_status_check', sql`${table.status} IN ('open', 'closed', 'cancelled')`),
+  ],
+);
+
+export const webAttendanceRecords = pgTable(
+  'web_attendance_records',
+  {
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => webAttendanceSessions.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => webUsers.id, { onDelete: 'restrict' }),
+    nameSnapshot: text('name_snapshot').notNull(),
+    status: text('status'),
+    note: text('note'),
+    updatedBy: uuid('updated_by').references(() => webUsers.id, { onDelete: 'restrict' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sessionId, table.userId] }),
+    index('web_attendance_records_user_idx').on(table.userId, table.sessionId),
+    check(
+      'web_attendance_records_status_check',
+      sql`${table.status} IS NULL OR ${table.status} IN ('present', 'late', 'absent', 'excused')`,
+    ),
+  ],
+);
+
+export const webAttendanceRecordAudits = pgTable(
+  'web_attendance_record_audits',
+  {
+    id: uuid('id').primaryKey(),
+    sessionId: uuid('session_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    previousStatus: text('previous_status'),
+    newStatus: text('new_status').notNull(),
+    note: text('note'),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references(() => webUsers.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('web_attendance_record_audits_record_idx').on(
+      table.sessionId,
+      table.userId,
+      table.createdAt,
+    ),
+    check(
+      'web_attendance_record_audits_status_check',
+      sql`${table.previousStatus} IS NULL OR ${table.previousStatus} IN ('present', 'late', 'absent', 'excused')`,
+    ),
+    check(
+      'web_attendance_record_audits_new_status_check',
+      sql`${table.newStatus} IN ('present', 'late', 'absent', 'excused')`,
+    ),
+    foreignKey({
+      columns: [table.sessionId, table.userId],
+      foreignColumns: [webAttendanceRecords.sessionId, webAttendanceRecords.userId],
+    }).onDelete('cascade'),
   ],
 );
