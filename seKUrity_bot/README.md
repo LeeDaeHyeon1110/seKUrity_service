@@ -12,6 +12,10 @@ cp .env.example .env
 `.env`에 값을 채운 뒤 Discord Developer Portal에서 **Message Content Intent**를 켜야 메시지 수정 전/후 내용을 기록할 수 있습니다.
 Bot은 PostgreSQL에 직접 접근하지 않고 Fastify Backend의 내부 API를
 사용합니다. `BACKEND_API_URL`과 `BACKEND_API_TOKEN`을 설정해야 합니다.
+`WEB_AUTH_GUILD_ID`를 설정하면 시작 시 해당 길드의 비봇 회원을 Backend와
+전체 동기화합니다. 이후 회원 가입·탈퇴, 닉네임·역할 변경과 Discord 사용자
+프로필 변경도 내부 API에 반영됩니다. 이를 위해 Discord Developer Portal에서
+**Server Members Intent**도 켜야 합니다.
 
 개발 서버에는 Guild command를 등록한 뒤 Bot을 실행합니다.
 

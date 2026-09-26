@@ -1,6 +1,7 @@
 import { Events } from 'discord.js';
 import type { GuildMember } from 'discord.js';
 import { syncWeeklyMemberJoin } from '../weekly/forumSync';
+import { syncWebMember } from '../web/memberSync';
 
 export default {
   name: Events.GuildMemberAdd,
@@ -11,6 +12,15 @@ export default {
     } catch (error) {
       console.error(
         `[weekly] Failed to create weekly post for new member ${member.id}:`,
+        error,
+      );
+    }
+
+    try {
+      await syncWebMember(member);
+    } catch (error) {
+      console.error(
+        `[web-members] Failed to sync new member ${member.id}:`,
         error,
       );
     }

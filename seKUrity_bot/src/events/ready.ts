@@ -6,6 +6,7 @@ import { reconcileDeletedConfiguredChannels } from '../storage/configuredChannel
 import { syncWeeklyForum } from '../weekly/forumSync';
 import { startWeeklyMissScheduler } from '../weekly/missScheduler';
 import { startWeeklyReminderScheduler } from '../weekly/reminderScheduler';
+import { reconcileConfiguredWebGuild } from '../web/memberSync';
 
 export default {
   name: Events.ClientReady,
@@ -67,6 +68,12 @@ export default {
           error,
         );
       }
+    }
+
+    try {
+      await reconcileConfiguredWebGuild(client);
+    } catch (error) {
+      console.error('[web-members] Failed to reconcile the configured web guild:', error);
     }
 
     startWeeklyMissScheduler(client);
