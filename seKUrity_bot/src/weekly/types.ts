@@ -2,6 +2,11 @@ import type {
   ScrumAttachment,
   ScrumTodoResult,
 } from '../scrums/types';
+import type { ScrumCategory } from '../scrums/categories';
+
+export interface WeeklyScrumResult extends ScrumTodoResult {
+  scrumCategory?: ScrumCategory | null;
+}
 
 export interface WeeklyReportThread {
   guildId: string;
@@ -22,7 +27,7 @@ export interface WeeklyPendingScrum {
 export interface WeeklyReportPreview {
   weekStart: string;
   weekEnd: string;
-  completedItems: ScrumTodoResult[];
+  completedItems: WeeklyScrumResult[];
   nextTodos: string[];
   pendingScrums: WeeklyPendingScrum[];
   existingReportId: string | null;
@@ -35,7 +40,7 @@ export interface WeeklyReport {
   threadId: string;
   weekStart: string;
   weekEnd: string;
-  completedItems: ScrumTodoResult[];
+  completedItems: WeeklyScrumResult[];
   extraItems: ScrumTodoResult[];
   nextTodos: string[];
   pendingTodos: string[];

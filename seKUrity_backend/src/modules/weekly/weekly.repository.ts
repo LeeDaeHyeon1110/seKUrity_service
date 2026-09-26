@@ -21,6 +21,7 @@ import type {
   WeeklyReport,
   WeeklyReportPreview,
   WeeklyReportThread,
+  WeeklyScrumResult,
 } from '../../contracts';
 import type { Database } from '../../db/database';
 import {
@@ -49,6 +50,7 @@ import {
   isWeeklyReportDeadlineClosed,
   isWeeklyReportReminderWindow,
 } from '../weeklyCycle';
+import { isQualifyingScrumResult, requiresQualifyingScrum } from './qualification';
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
 type WeeklyReportRow = typeof weeklyReports.$inferSelect;
@@ -147,7 +149,7 @@ async function insertReportItems(
   transaction: Transaction,
   reportId: string,
   input: {
-    completedItems: ScrumResult[];
+    completedItems: WeeklyScrumResult[];
     extraItems: ScrumResult[];
     nextTodos: string[];
     pendingTodos: string[];
@@ -189,6 +191,9 @@ async function insertReportItems(
       id: itemId,
       reportId,
       kind,
+      scrumCategory: kind === 'completed' && 'scrumCategory' in item
+        ? item.scrumCategory ?? null
+        : null,
       title: item.title,
       comment: item.comment,
       position,
@@ -366,7 +371,11 @@ export class WeeklyRepository {
           .where(eq(weeklyMissCountResets.guildId, guildId))
           .limit(1),
       ]);
-      const reportedUserIds = new Set(reports.map((report) => report.userId));
+      const reportedUserIds = requiresQualifyingScrum(input.weekEnd)
+        ? await this.getUsersWithQualifyingReports(
+          guildId, input.weekEnd, userIds, transaction,
+        )
+        : new Set(reports.map((report) => report.userId));
       const countAfter = resetRows[0]?.countAfter ?? null;
 
       for (const thread of threads) {
@@ -457,9 +466,11 @@ export class WeeklyRepository {
             inArray(weeklyReportReminders.userId, userIds),
           )),
       ]);
-      const usersWithContent = new Set(
-        contentRows.map((row) => row.userId),
-      );
+      const usersWithContent = requiresQualifyingScrum(input.weekEnd)
+        ? await this.getUsersWithQualifyingReports(
+          guildId, input.weekEnd, userIds, transaction,
+        )
+        : new Set(contentRows.map((row) => row.userId));
       const alreadyReminded = new Set(
         reminderRows.map((row) => row.userId),
       );
@@ -487,6 +498,43 @@ export class WeeklyRepository {
 
       return claimedUserIds;
     });
+  }
+
+  private async getUsersWithQualifyingReports(
+    guildId: string,
+    weekEnd: string,
+    userIds: string[],
+    database: Database | Transaction,
+  ): Promise<Set<string>> {
+    const rows = await database
+      .select({
+        userId: weeklyReports.userId,
+        scrumCategory: weeklyReportItems.scrumCategory,
+      })
+      .from(weeklyReports)
+      .innerJoin(weeklyReportItems, eq(weeklyReportItems.reportId, weeklyReports.id))
+      .where(and(
+        eq(weeklyReports.guildId, guildId),
+        eq(weeklyReports.weekEnd, weekEnd),
+        inArray(weeklyReports.userId, userIds),
+        eq(weeklyReportItems.kind, 'completed'),
+      ));
+    const qualified = new Set(
+      rows.filter(isQualifyingScrumResult).map((row) => row.userId),
+    );
+    const legacyUsers = new Set(rows
+      .filter((row) => row.scrumCategory === null && !qualified.has(row.userId))
+      .map((row) => row.userId));
+
+    // Reports saved before source categories existed are checked against their
+    // scrum sources until the bot refreshes their stored snapshot.
+    for (const userId of legacyUsers) {
+      const preview = await this.getPreview(guildId, userId, weekEnd);
+      if (preview.completedItems.some(isQualifyingScrumResult)) {
+        qualified.add(userId);
+      }
+    }
+    return qualified;
   }
 
   async getPreview(
@@ -566,7 +614,7 @@ export class WeeklyRepository {
       nextTodosByEntry.set(todo.entryId, values);
     }
 
-    const completedItems: ScrumResult[] = [];
+    const completedItems: WeeklyScrumResult[] = [];
     const nextTodos: string[] = [];
 
     for (const { scrum } of scrumRows) {
@@ -578,16 +626,17 @@ export class WeeklyRepository {
         continue;
       }
 
-      const completionDate = getKstDateString(scrum.completedAt);
-
-      if (
-        completionDate >= period.weekStart
-        && completionDate <= period.weekEnd
-      ) {
-        completedItems.push(...scrum.completionResults);
+      if (getWeeklyReportCycleEnd(scrum.completedAt) === weekEnd) {
+        completedItems.push(...scrum.completionResults.map((item) => ({
+          ...item,
+          scrumCategory: scrum.category as WeeklyScrumResult['scrumCategory'],
+        })));
       }
     }
 
+    const categoryByScrumId = new Map(scrumRows.map(({ scrum }) =>
+      [scrum.id, scrum.category as WeeklyScrumResult['scrumCategory']],
+    ));
     for (const entry of entryRows) {
       for (const item of itemsByEntry.get(entry.id) ?? []) {
         const attachments = attachmentRows
@@ -611,6 +660,7 @@ export class WeeklyRepository {
           )
         ) {
           completedItems.push({
+            scrumCategory: categoryByScrumId.get(entry.scrumId),
             title: item.title,
             comment: item.comment,
             attachments,
@@ -709,7 +759,8 @@ export class WeeklyRepository {
       : [];
     const mapResult = (
       item: typeof weeklyReportItems.$inferSelect,
-    ): ScrumResult => ({
+    ): WeeklyScrumResult => ({
+      scrumCategory: item.scrumCategory,
       title: item.title,
       comment: item.comment,
       attachments: attachments

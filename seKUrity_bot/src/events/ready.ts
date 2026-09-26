@@ -6,6 +6,7 @@ import { reconcileDeletedConfiguredChannels } from '../storage/configuredChannel
 import { syncWeeklyForum } from '../weekly/forumSync';
 import { startWeeklyMissScheduler } from '../weekly/missScheduler';
 import { startWeeklyReminderScheduler } from '../weekly/reminderScheduler';
+import { syncCurrentWeeklyReportsForScrumLifecycle } from '../weekly/syncService';
 import { reconcileConfiguredWebGuild } from '../web/memberSync';
 
 export default {
@@ -61,7 +62,13 @@ export default {
       }
 
       try {
-        await syncWeeklyForum(guild);
+        const result = await syncWeeklyForum(guild);
+        await syncCurrentWeeklyReportsForScrumLifecycle({
+          client,
+          guild,
+          userIds: result.userIds,
+          createIfMissing: true,
+        });
       } catch (error) {
         console.error(
           `[weekly] Failed to sync weekly forum for guild ${guild.id}:`,

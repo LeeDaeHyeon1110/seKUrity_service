@@ -164,3 +164,25 @@ Bot 동기화 API의 `fullReconciliation=true`는 payload에 없는 기존 길�
 npm run db:reset:weekly-misses -- --after 2026-09-01
 npm run db:reset:weekly-misses -- --after 2026-09-01 --apply
 ```
+
+## Weekly Scrum Qualification
+
+Migration `0015_weekly_scrum_categories` adds the nullable `scrum_category` column
+to `weekly_report_items`. Synced completed items retain their source category;
+manually added weekly items cannot set it. Apply migrations before starting the
+updated bot (the backend runs them on startup).
+
+Starting with `weekEnd=2026-09-27` (deadline: September 29, 2026, 19:00 KST),
+both reminders and missed-report counting require at least one completed item
+from a project, study, or personal study scrum. Personal activities and manual
+weekly additions alone do not qualify, but their reports remain available.
+Earlier cycles keep the previous counting rule. Legacy current reports with no
+stored category are checked against their scrum sources until synchronized.
+
+The database regression test uses a separate PostgreSQL database whose name
+starts with `sekurity_weekly_validation`. It applies migrations, creates isolated
+fixtures, and removes its own fixtures afterward:
+
+```bash
+WEEKLY_VALIDATION_DATABASE_URL=postgresql://validation:validation@localhost:5432/sekurity_weekly_validation npm run check:weekly
+```

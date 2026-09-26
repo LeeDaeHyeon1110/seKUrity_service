@@ -303,10 +303,17 @@ export const WeeklyPendingScrumSchema = Type.Object({
   }),
 });
 
+export const WeeklyScrumResultSchema = Type.Object({
+  ...ScrumResultSchema.properties,
+  scrumCategory: Type.Optional(Type.Union([ScrumCategorySchema, Type.Null()])),
+});
+
+export type WeeklyScrumResult = Static<typeof WeeklyScrumResultSchema>;
+
 export const WeeklyReportPreviewSchema = Type.Object({
   weekStart: DateSchema,
   weekEnd: DateSchema,
-  completedItems: Type.Array(ScrumResultSchema, { maxItems: 250 }),
+  completedItems: Type.Array(WeeklyScrumResultSchema, { maxItems: 250 }),
   nextTodos: Type.Array(Type.String({ minLength: 1, maxLength: 1_500 }), {
     maxItems: 250,
   }),
@@ -321,7 +328,7 @@ export const WeeklyReportSchema = Type.Object({
   threadId: DiscordIdSchema,
   weekStart: DateSchema,
   weekEnd: DateSchema,
-  completedItems: Type.Array(ScrumResultSchema, { maxItems: 250 }),
+  completedItems: Type.Array(WeeklyScrumResultSchema, { maxItems: 250 }),
   extraItems: Type.Array(ScrumResultSchema, { maxItems: 10 }),
   nextTodos: Type.Array(Type.String({ minLength: 1, maxLength: 1_500 }), {
     maxItems: 250,

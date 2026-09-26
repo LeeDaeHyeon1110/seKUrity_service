@@ -14,7 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import type { ScrumResult } from '../contracts';
+import type { ScrumResult, WeeklyScrumResult } from '../contracts';
 
 export const guildChannelSettings = pgTable(
   'guild_channel_settings',
@@ -450,6 +450,9 @@ export const weeklyReportItems = pgTable(
       .notNull()
       .references(() => weeklyReports.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(),
+    scrumCategory: text('scrum_category').$type<NonNullable<
+      WeeklyScrumResult['scrumCategory']
+    >>(),
     title: text('title').notNull(),
     comment: text('comment').notNull().default(''),
     position: integer('position').notNull(),
@@ -468,6 +471,10 @@ export const weeklyReportItems = pgTable(
       sql`${table.kind} IN ('completed', 'extra', 'next', 'pending')`,
     ),
     check('weekly_report_items_position_check', sql`${table.position} >= 0`),
+    check(
+      'weekly_report_items_scrum_category_check',
+      sql`${table.scrumCategory} IS NULL OR (${table.kind} = 'completed' AND ${table.scrumCategory} IN ('project', 'study', 'personal_study', 'personal'))`,
+    ),
   ],
 );
 

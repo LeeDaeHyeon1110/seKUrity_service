@@ -1532,6 +1532,18 @@ const weeklyReport: WeeklyReport = {
 };
 const weeklyStarterContent = buildWeeklyStarterContent('4');
 const weeklyReportJson = buildWeeklyReportEmbed(weeklyReport).toJSON();
+const categorizedReport: WeeklyReport = {
+  ...weeklyReport,
+  completedItems: Object.values(ScrumCategory).map((scrumCategory) => ({
+    title: 'Source task', scrumCategory, comment: '', attachments: [], links: [],
+  })),
+};
+const categorizedReportJson = buildWeeklyReportEmbed(categorizedReport).toJSON();
+for (const category of ['프로젝트', '스터디', '개인 스터디', '개인 활동']) {
+  assert(categorizedReportJson.fields?.[0]?.value.includes(`[${category}] Source task`));
+}
+assert(categorizedReportJson.fields?.[0]?.value.includes('[추가] extra task'));
+assert.equal(categorizedReport.completedItems[0]?.title, 'Source task');
 const weeklyReportRowJson = buildWeeklyReportRow(weeklyReport).toJSON();
 const weeklyAdminDeleteRowJson = buildWeeklyAdminDeleteExtraRow(
   weeklyReport,

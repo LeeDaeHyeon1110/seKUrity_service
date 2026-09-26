@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { SCRUM_CATEGORY_LABELS } from '../scrums/categories';
 import type {
   WeeklyReport,
   WeeklyReportPreview,
@@ -55,7 +56,11 @@ export function buildWeeklyReportEmbed(
         ...report.extraItems.map((item) => ({
           title: `[추가] ${item.title}`,
         })),
-        ...report.completedItems,
+        ...report.completedItems.map((item) => ({
+          title: item.scrumCategory
+            ? `[${SCRUM_CATEGORY_LABELS[item.scrumCategory]}] ${item.title}`
+            : item.title,
+        })),
       ]),
     })
     .setTimestamp(new Date(report.createdAt));

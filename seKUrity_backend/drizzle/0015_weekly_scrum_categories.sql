@@ -1,0 +1,2 @@
+ALTER TABLE "weekly_report_items" ADD COLUMN "scrum_category" text;--> statement-breakpoint
+ALTER TABLE "weekly_report_items" ADD CONSTRAINT "weekly_report_items_scrum_category_check" CHECK ("weekly_report_items"."scrum_category" IS NULL OR ("weekly_report_items"."kind" = 'completed' AND "weekly_report_items"."scrum_category" IN ('project', 'study', 'personal_study', 'personal')));

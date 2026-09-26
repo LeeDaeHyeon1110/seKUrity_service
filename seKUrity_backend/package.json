@@ -10,6 +10,7 @@
     "start": "node dist/src/server.js",
     "check": "tsc --noEmit",
     "check:api": "node --import tsx scripts/validate-api.ts",
+    "check:weekly": "node --import tsx scripts/validate-weekly-scrums.ts",
     "check:oauth": "node --import tsx scripts/validate-oauth.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/runMigrations.ts",
