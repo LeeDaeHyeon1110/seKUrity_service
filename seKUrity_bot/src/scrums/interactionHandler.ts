@@ -3160,6 +3160,17 @@ async function handleDeleteEntryButton(
     }
   }
 
+  let startMessageRestored = true;
+  try {
+    startMessageRestored = await refreshScrumStartMessage(
+      interaction.channel,
+      deleted.scrum,
+    );
+  } catch (error) {
+    startMessageRestored = false;
+    console.warn(`[scrum] Failed to restore start message in ${interaction.channel.id}:`, error);
+  }
+
   if (interaction.guild) {
     await syncWeeklyReportsForScrum({
       client: interaction.client,
@@ -3172,6 +3183,7 @@ async function handleDeleteEntryButton(
 
   await editReplyWithoutComponents(interaction, [
     '가장 최근 스크럼을 삭제했습니다. 이번 주차에 다시 작성할 수 있습니다.',
+    startMessageRestored ? '' : '시작 메시지 복원에 실패했습니다. 관리자에게 스크럼 게시물 동기화를 요청해 주세요.',
     failedDeletes > 0
       ? `Discord 메시지 ${failedDeletes}개는 삭제하지 못했습니다.`
       : '',
@@ -4297,12 +4309,7 @@ async function handleNextTodosModal(interaction: ModalSubmitInteraction, session
     try {
       await refreshScrumStartMessage(
         thread,
-        {
-          ...session.scrum,
-          currentTodos: nextTodos,
-          nextScrumDate: entry.nextScrumDate,
-        },
-        false,
+        session.scrum,
       );
     } catch (error) {
       console.warn(

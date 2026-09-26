@@ -311,6 +311,14 @@ export async function getLatestScrumEntryByThread(
   );
 }
 
+export async function getFirstScrumEntryByThread(
+  threadId: string,
+): Promise<{ entry: ScrumEntry; scrum: Scrum }> {
+  return backendRequest<{ entry: ScrumEntry; scrum: Scrum }>(
+    `/internal/v1/scrums/by-thread/${encodeURIComponent(threadId)}/entries/first`,
+  );
+}
+
 export async function updateScrumEntry(input: {
   entryId: string;
   actorId: string;

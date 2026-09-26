@@ -369,6 +369,24 @@ export class ScrumRepository {
     return this.getEntryWithScrum(row.entry.id);
   }
 
+  async getFirstEntryByThread(
+    threadId: string,
+  ): Promise<{ entry: ScrumEntry; scrum: Scrum }> {
+    const [row] = await this.database
+      .select({ id: scrumEntries.id })
+      .from(scrumEntries)
+      .innerJoin(scrums, eq(scrums.id, scrumEntries.scrumId))
+      .where(eq(scrums.threadId, threadId))
+      .orderBy(asc(scrumEntries.scrumDate), asc(scrumEntries.createdAt))
+      .limit(1);
+
+    if (!row) {
+      throw new ApiError(404, 'SCRUM_ENTRY_NOT_FOUND', 'Scrum entry not found.');
+    }
+
+    return this.getEntryWithScrum(row.id);
+  }
+
   async updateMetadataByThread(
     threadId: string,
     input: UpdateScrumMetadataBody,

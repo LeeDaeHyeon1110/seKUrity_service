@@ -528,6 +528,7 @@ async function main(): Promise<void> {
       ],
     );
     assert(openApi.json().paths['/internal/v1/scrums/by-thread/{threadId}/complete']);
+    assert(openApi.json().paths['/internal/v1/scrums/by-thread/{threadId}/entries/first']);
     assert(openApi.json().paths['/internal/v1/scrums/by-thread/{threadId}/abandon']);
     assert(
       openApi.json().paths[

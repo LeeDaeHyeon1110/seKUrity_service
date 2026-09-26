@@ -229,6 +229,22 @@ export function createScrumRoutes(
       ),
     );
 
+    fastify.get<{ Params: ThreadParams }>(
+      '/scrums/by-thread/:threadId/entries/first',
+      {
+        schema: {
+          tags: ['internal-scrums'],
+          params: Type.Object({ threadId: DiscordIdSchema }),
+          response: {
+            200: Type.Object({ entry: ScrumEntrySchema, scrum: ScrumSchema }),
+            401: ErrorResponseSchema,
+            404: ErrorResponseSchema,
+          },
+        },
+      },
+      async (request) => repository.getFirstEntryByThread(request.params.threadId),
+    );
+
     fastify.delete<{
       Params: ThreadParams;
       Body: DeleteScrumBody;

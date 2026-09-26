@@ -5,6 +5,7 @@ import type {
   GuildTextBasedChannel,
   Message,
 } from 'discord.js';
+import { BackendApiError } from '../api/backendClient';
 import {
   buildScrumStartRow,
   buildScrumWriteRow,
@@ -21,7 +22,7 @@ import {
 } from './formatters';
 import {
   getActiveScrumsForGuild,
-  getInitialTodosEditableScrums,
+  getFirstScrumEntryByThread,
 } from './scrumStore';
 import type { Scrum } from './types';
 
@@ -120,7 +121,6 @@ async function updateScrumStartMessage(
   thread: GuildTextBasedChannel,
   messages: Message[],
   scrum: Scrum,
-  editable: boolean,
 ): Promise<boolean> {
   const message = findScrumStartMessage(
     messages,
@@ -131,31 +131,51 @@ async function updateScrumStartMessage(
     return false;
   }
 
+  const initial = await getScrumStartState(scrum);
   await message.edit({
-    embeds: [buildScrumTodoEmbed(scrum)],
-    components: [editable ? buildScrumStartRow() : buildScrumWriteRow()],
+    embeds: [buildScrumTodoEmbed(initial.scrum)],
+    components: [initial.editable ? buildScrumStartRow() : buildScrumWriteRow()],
     allowedMentions: { parse: [] },
   });
   return true;
 }
 
+async function getScrumStartState(scrum: Scrum): Promise<{
+  scrum: Scrum;
+  editable: boolean;
+}> {
+  try {
+    const first = await getFirstScrumEntryByThread(scrum.threadId);
+    return {
+      scrum: {
+        ...first.scrum,
+        currentTodos: first.entry.completedItems.map((item) => item.title),
+        nextScrumDate: first.entry.scrumDate,
+      },
+      editable: false,
+    };
+  } catch (error) {
+    if (error instanceof BackendApiError && error.code === 'SCRUM_ENTRY_NOT_FOUND') {
+      return { scrum, editable: true };
+    }
+    throw error;
+  }
+}
+
 export async function refreshScrumStartMessage(
   thread: GuildTextBasedChannel,
   scrum: Scrum,
-  editable: boolean,
 ): Promise<boolean> {
   return updateScrumStartMessage(
     thread,
     await fetchThreadMessages(thread),
     scrum,
-    editable,
   );
 }
 
 async function refreshScrumPost(
   guild: Guild,
   scrum: Scrum,
-  editable: boolean,
 ): Promise<boolean> {
   const channel = await guild.channels.fetch(scrum.threadId);
 
@@ -177,13 +197,13 @@ async function refreshScrumPost(
     thread,
     messages,
     scrum,
-    editable,
   );
 
-  if (!updated && editable) {
+  if (!updated) {
+    const initial = await getScrumStartState(scrum);
     await thread.send({
-      embeds: [buildScrumTodoEmbed(scrum)],
-      components: [buildScrumStartRow()],
+      embeds: [buildScrumTodoEmbed(initial.scrum)],
+      components: [initial.editable ? buildScrumStartRow() : buildScrumWriteRow()],
       allowedMentions: { parse: [] },
     });
   }
@@ -195,11 +215,7 @@ async function refreshScrumPost(
 export async function syncScrumPostMessages(
   guild: Guild,
 ): Promise<number> {
-  const [scrums, editableScrums] = await Promise.all([
-    getActiveScrumsForGuild(guild.id),
-    getInitialTodosEditableScrums(guild.id),
-  ]);
-  const editableIds = new Set(editableScrums.map((scrum) => scrum.id));
+  const scrums = await getActiveScrumsForGuild(guild.id);
   let synchronized = 0;
 
   for (const scrum of scrums) {
@@ -207,7 +223,6 @@ export async function syncScrumPostMessages(
       if (await refreshScrumPost(
         guild,
         scrum,
-        editableIds.has(scrum.id),
       )) {
         synchronized += 1;
       }
