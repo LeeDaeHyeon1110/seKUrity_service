@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AppShell } from '@/components/app-shell';
+import { AuthProvider } from '@/components/auth-provider';
 
 const title = 'seKUrity | 건국대학교 글로컬캠퍼스 보안 소모임';
 const description =
@@ -50,7 +52,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

@@ -107,42 +107,8 @@ export default function Home() {
     };
   }, []);
 
-  const toggleTheme = () => {
-    const currentTheme = document.documentElement.dataset.theme === 'dark'
-      ? 'dark'
-      : 'light';
-    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = nextTheme;
-    window.localStorage.setItem('sekurity-theme', nextTheme);
-  };
-
   return (
-    <div className="site-shell">
-      <header className="site-header">
-        <a className="wordmark" href="#top" aria-label="seKUrity 홈">
-          se<span>KU</span>rity
-        </a>
-
-        <nav className="main-nav" aria-label="주요 메뉴">
-          <a href="#top">소개</a>
-          <a href="#studies">스터디</a>
-          <a href="#achievements">성과</a>
-          <a href="#contact">연락처</a>
-        </nav>
-
-      </header>
-
-      <button
-        className="theme-toggle"
-        type="button"
-        onClick={toggleTheme}
-        aria-label="화면 테마 전환"
-        title="화면 테마 전환"
-      >
-        <span className="theme-icon-light" aria-hidden="true">☀</span>
-        <span className="theme-icon-dark" aria-hidden="true">☾</span>
-      </button>
-
+    <>
       <main id="top">
         <section className="hero hero-simple">
           <div className="hero-copy">
@@ -260,6 +226,6 @@ export default function Home() {
         <a className="wordmark" href="#top" aria-label="맨 위로 이동">se<span>KU</span>rity</a>
         <p>SEKURITY FOREVER</p>
       </footer>
-    </div>
+    </>
   );
 }
