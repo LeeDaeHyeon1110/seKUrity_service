@@ -10,7 +10,8 @@ Discord
    v
 seKUrity Bot -- HTTP/Bearer --> Fastify Backend --> PostgreSQL
 
-사용자 -- HTTP --> seKUrity Web
+사용자 -- HTTPS --> Nginx -- / ----------> seKUrity Web
+                          `-- /api/v1/ --> Fastify Backend
 ```
 
 - Bot은 PostgreSQL에 직접 접근하지 않습니다.
@@ -18,7 +19,13 @@ seKUrity Bot -- HTTP/Bearer --> Fastify Backend --> PostgreSQL
 - Bot은 Compose 내부 DNS인 `http://backend:3000`으로 API를 호출합니다.
 - Backend의 호스트 포트는 로컬 인터페이스에만 바인딩됩니다.
 - Web은 외부 포트를 직접 노출하지 않고 Nginx를 통해서만 접근합니다.
-- Nginx는 HTTP 요청을 `https://sekurity.kr`로 리다이렉트하고 HTTPS 요청을 Web으로 전달합니다.
+- Nginx는 HTTP와 와일드카드 서브도메인을 `https://sekurity.kr`로 리다이렉트합니다.
+- Nginx는 공개 `/api/v1/`만 Backend로 전달합니다. `/internal/`은 외부에
+  노출하지 않으며 Bot만 Compose 내부 네트워크에서 호출합니다.
+- 회원 사진은 Web 정적 파일이 아닌 Backend 전용 `backend-uploads` 볼륨에
+  저장되고, 인증된 API를 통해서만 제공됩니다.
+- 사진 파일 자체는 5 MiB까지 허용하며, Nginx는 multipart 메타데이터를
+  포함할 수 있도록 공개 API 요청 본문을 6 MiB로 제한합니다.
 
 ## Start
 
@@ -28,11 +35,29 @@ seKUrity Bot -- HTTP/Bearer --> Fastify Backend --> PostgreSQL
 cp .env.example .env
 ```
 
-`POSTGRES_PASSWORD`, `BACKEND_INTERNAL_TOKEN`, `DISCORD_TOKEN`을 반드시
-설정한 뒤 실행합니다.
+`POSTGRES_PASSWORD`, `BACKEND_INTERNAL_TOKEN`, `DISCORD_TOKEN`,
+`DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`,
+`SESSION_TOKEN_PEPPER`를 반드시 설정한 뒤 실행합니다. 세션 비밀값 두 개는
+서로 다른 값이어야 하며 각각 다음처럼 생성할 수 있습니다.
+
+```bash
+openssl rand -hex 32
+```
 
 ```bash
 docker compose up --build
+```
+
+기존 npm 스크립트를 사용해도 같은 구성이 실행됩니다.
+
+```bash
+npm run compose:up
+```
+
+서버에서 백그라운드로 갱신할 때는 다음 명령을 사용합니다.
+
+```bash
+docker compose up -d --build
 ```
 
 Web은 아래 주소에서 확인할 수 있습니다.
@@ -40,6 +65,18 @@ Web은 아래 주소에서 확인할 수 있습니다.
 ```text
 https://sekurity.kr
 ```
+
+Discord Developer Portal의 OAuth2 Redirects에는 아래 주소를 오탈자, 후행
+슬래시 또는 다른 호스트 없이 정확히 등록합니다.
+
+```text
+https://sekurity.kr/api/v1/auth/discord/callback
+```
+
+`DISCORD_REDIRECT_URI`와 `SITE_URL`도 각각 위 콜백 주소와
+`https://sekurity.kr`로 유지합니다. Discord Client Secret, Bot Token,
+세션 비밀값은 저장소나 브라우저 환경 변수에 넣지 않고 서버의 `.env`에서만
+관리합니다.
 
 Nginx는 호스트의 `/etc/letsencrypt`를 읽기 전용으로 연결하며 아래 인증서를 사용합니다.
 
@@ -93,7 +130,88 @@ curl \
   http://127.0.0.1:3000/openapi.json
 ```
 
+## Web login and member access
+
+웹 회원가입과 로그인은 Discord OAuth2로 처리합니다. Bot은 시작할 때
+`WEB_AUTH_GUILD_ID` 길드의 비봇 회원을 Backend에 전체 동기화하고, 이후
+가입·탈퇴, 닉네임·역할 및 Discord 프로필 변경을 계속 반영합니다. Discord
+Developer Portal의 Bot 설정에서 **Server Members Intent**를 켜야 합니다.
+
+기본 운영 식별자는 다음과 같습니다.
+
+```dotenv
+WEB_AUTH_GUILD_ID=1507335622719967292
+WEB_ACTIVE_MEMBER_ROLE_ID=1507362589619912734
+WEB_BOARD_MEMBER_ROLE_ID=1507362663339135047
+```
+
+- 길드에 없거나 활동 부원 역할이 없는 로그인 사용자는 게스트입니다.
+- 활동 부원은 점수·출석·주간보고와 회원 소개 기능을 사용합니다.
+- 회장단 역할 권한은 Backend가 동기화된 역할 ID로 판정합니다.
+- 회장단 기능은 활동 부원 역할과 회장단 역할을 모두 가진 회원에게만
+  허용됩니다.
+- 역할이 회수되거나 길드에서 나가면 기존 기록은 보존되지만 회원 전용 접근과
+  기존 로그인 세션은 회수됩니다.
+
+활동 부원 대시보드는 본인의 누적 점수, 출석 횟수와 주간보고 미제출 이력을
+보여줍니다. 회장단은 양수 점수만 사유와 함께 추가할 수 있고, 오입력은 감사
+기록이 남는 무효 처리로 정정합니다. 출석부는 화요일 날짜만 만들 수 있으며
+마감 시 미입력 부원을 결석으로 처리하고, 전체 휴회일은 개인 집계에서
+제외합니다. 소개 카드는 활동 부원끼리만 조회하며 사진은 공개 정적 경로가
+아닌 인증 API로 제공합니다.
+
+닉네임과 역할 변경을 반영하려면 Bot을 항상 실행해야 합니다. 장시간 중단 후
+재시작하더라도 시작 시 전체 동기화로 누락된 변경을 정리합니다.
+
 ## Development
+
+### 로컬 Docker 웹 테스트
+
+Mac에서 Certbot 인증서를 복사하지 않고 HTTP로 테스트할 수 있습니다.
+로컬 Compose 프로젝트는 `sekurity-local`로 실행되며 데이터베이스와 사진
+볼륨이 운영 프로젝트와 분리됩니다. Nginx는 `127.0.0.1:8080`에만 바인딩되고
+443 포트와 `/etc/letsencrypt`를 사용하지 않습니다.
+
+```bash
+cp .env.local.example .env.local
+```
+
+`.env.local`의 `POSTGRES_PASSWORD`, `BACKEND_INTERNAL_TOKEN`,
+`SESSION_SECRET`, `SESSION_TOKEN_PEPPER`를 로컬 테스트용 값으로 변경합니다.
+세션 비밀값 두 개는 각각 `openssl rand -hex 32`로 생성할 수 있습니다.
+PostgreSQL 볼륨을 만든 뒤 `POSTGRES_PASSWORD`를 변경하면 기존 DB 사용자
+비밀번호도 별도로 변경해야 하므로, 비밀번호는 첫 기동 전에 정합니다.
+화면만 확인할 때는 Discord 관련 예시 값을 그대로 둬도 되지만, 로그인까지
+시험하려면 `DISCORD_CLIENT_ID`와 `DISCORD_CLIENT_SECRET`에 실제 Discord
+애플리케이션 값을 넣고 Developer Portal의 OAuth2 Redirects에 아래 주소를
+추가합니다.
+
+```text
+http://127.0.0.1:8080/api/v1/auth/discord/callback
+```
+
+기존 운영용 Redirect URI는 삭제할 필요가 없습니다. 브라우저에서는
+`http://127.0.0.1:8080`을 사용합니다. `http://localhost:8080`으로 접속해도
+Nginx가 쿠키를 발급하기 전에 `127.0.0.1:8080`으로 이동시킵니다.
+두 호스트는 쿠키를 공유하지 않으므로, 시작 주소와 콜백 주소를 섞으면
+`INVALID_OAUTH_STATE`가 발생합니다. 수정 전에 시작한 로그인이나 만료된
+콜백 화면은 새로고침하지 말고 사이트의 로그인 버튼에서 다시 시작하세요.
+
+`SITE_URL`과 `DISCORD_REDIRECT_URI`는 프로토콜·호스트·포트가 같아야 하며,
+콜백 경로는 `/api/v1/auth/discord/callback`이어야 합니다. 불일치하면
+Backend가 시작 시 설정 오류를 알려줍니다. 로컬 Compose는 이 두 주소를
+위의 `127.0.0.1:8080` 기준으로 고정합니다.
+
+```bash
+npm run local:up
+npm run local:logs
+npm run local:down
+```
+
+로컬 설정에서는 Discord Bot을 시작하지 않습니다. 로그인한 회원의 길드
+닉네임과 역할은 OAuth 과정에서 조회되지만, 다른 회원의 사전 동기화나 실시간
+역할 변경 반영은 이루어지지 않습니다. 이 부분까지 테스트할 때는 별도의
+테스트 Bot과 길드를 사용하세요.
 
 각 서비스를 호스트에서 실행하려면 PostgreSQL과 Backend를 먼저 실행하고
 Bot에 `BACKEND_API_URL=http://localhost:3000`을 설정합니다.
